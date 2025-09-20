@@ -1,0 +1,468 @@
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Wallet, Plus, Pencil, Trash2, Search, Filter } from 'lucide-react';
+import ExportButton from '@/components/ExportButton';
+
+interface Asset {
+  id: string;
+  name: string;
+  category: string;
+  value: number;
+  purchase_date: string | null;
+  description: string | null;
+  created_at: string;
+}
+
+const Assets = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    category: '',
+    value: '',
+    purchase_date: '',
+    description: '',
+  });
+
+  const categories = [
+    'Properti',
+    'Kendaraan',
+    'Elektronik',
+    'Investasi',
+    'Emas',
+    'Peralatan',
+    'Lainnya'
+  ];
+
+  useEffect(() => {
+    if (user) {
+      fetchAssets();
+    }
+  }, [user]);
+
+  const fetchAssets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('assets')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAssets((data as Asset[]) || []);
+    } catch (error) {
+      console.error('Error fetching assets:', error);
+      toast({
+        title: "Error",
+        description: "Gagal memuat data aset",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name || !formData.category || !formData.value) {
+      toast({
+        title: "Error",
+        description: "Nama, kategori, dan nilai aset wajib diisi",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const assetData = {
+        name: formData.name,
+        category: formData.category,
+        value: parseFloat(formData.value),
+        purchase_date: formData.purchase_date || null,
+        description: formData.description || null,
+        user_id: user?.id,
+      };
+
+      if (editingAsset) {
+        const { error } = await supabase
+          .from('assets')
+          .update(assetData)
+          .eq('id', editingAsset.id);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Berhasil",
+          description: "Data aset berhasil diperbarui",
+        });
+      } else {
+        const { error } = await supabase
+          .from('assets')
+          .insert([assetData]);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Berhasil",
+          description: "Data aset berhasil ditambahkan",
+        });
+      }
+
+      setDialogOpen(false);
+      setEditingAsset(null);
+      resetForm();
+      fetchAssets();
+    } catch (error) {
+      console.error('Error saving asset:', error);
+      toast({
+        title: "Error",
+        description: "Gagal menyimpan data aset",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEdit = (asset: Asset) => {
+    setEditingAsset(asset);
+    setFormData({
+      name: asset.name,
+      category: asset.category,
+      value: asset.value.toString(),
+      purchase_date: asset.purchase_date || '',
+      description: asset.description || '',
+    });
+    setDialogOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus data aset ini?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('assets')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Berhasil",
+        description: "Data aset berhasil dihapus",
+      });
+      
+      fetchAssets();
+    } catch (error) {
+      console.error('Error deleting asset:', error);
+      toast({
+        title: "Error",
+        description: "Gagal menghapus data aset",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      category: '',
+      value: '',
+      purchase_date: '',
+      description: '',
+    });
+  };
+
+  const openAddDialog = () => {
+    resetForm();
+    setEditingAsset(null);
+    setDialogOpen(true);
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const filteredAssets = assets.filter(asset => {
+    const matchesSearch = asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         asset.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = categoryFilter === 'all' || asset.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  const totalValue = filteredAssets.reduce((sum, asset) => sum + asset.value, 0);
+
+  const exportData = filteredAssets.map(asset => ({
+    'Nama Aset': asset.name,
+    'Kategori': asset.category,
+    'Nilai': asset.value,
+    'Tanggal Beli': asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString('id-ID') : '-',
+    'Keterangan': asset.description || '-',
+    'Tanggal Dibuat': new Date(asset.created_at).toLocaleDateString('id-ID'),
+  }));
+
+  if (loading) {
+    return (
+      <div className="fade-in">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Aset</h1>
+          <p className="text-muted-foreground">Kelola data aset Anda</p>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-12 bg-muted rounded"></div>
+          <div className="h-64 bg-muted rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fade-in">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Aset</h1>
+        <p className="text-muted-foreground">Kelola dan pantau aset pribadi Anda</p>
+      </div>
+
+      {/* Summary Card */}
+      <Card className="financial-card mb-6">
+        <CardHeader className="financial-card-header">
+          <CardTitle className="flex items-center">
+            <Wallet className="w-6 h-6 mr-2 text-primary" />
+            Total Nilai Aset
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="financial-amount text-primary">
+            {formatCurrency(totalValue)}
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            {filteredAssets.length} aset terdaftar
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Actions and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="flex-1 flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Cari nama aset atau keterangan..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-40">
+              <Filter className="w-4 h-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Kategori</SelectItem>
+              {categories.map(category => (
+                <SelectItem key={category} value={category}>{category}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex gap-2">
+          <ExportButton 
+            data={exportData} 
+            filename="data_aset"
+            disabled={filteredAssets.length === 0}
+          />
+          <Button onClick={openAddDialog} className="btn-hover-scale">
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah Aset
+          </Button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <Card className="financial-card">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nama Aset</TableHead>
+                  <TableHead>Kategori</TableHead>
+                  <TableHead>Nilai</TableHead>
+                  <TableHead>Tanggal Beli</TableHead>
+                  <TableHead>Keterangan</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAssets.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      {searchTerm || categoryFilter !== 'all' 
+                        ? 'Tidak ada data yang sesuai dengan filter' 
+                        : 'Belum ada data aset. Tambah data pertama Anda!'
+                      }
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredAssets.map((asset) => (
+                    <TableRow key={asset.id} className="table-row-hover">
+                      <TableCell className="font-medium">{asset.name}</TableCell>
+                      <TableCell>{asset.category}</TableCell>
+                      <TableCell>{formatCurrency(asset.value)}</TableCell>
+                      <TableCell>
+                        {asset.purchase_date 
+                          ? new Date(asset.purchase_date).toLocaleDateString('id-ID')
+                          : '-'
+                        }
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        {asset.description || '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(asset)}
+                            className="btn-hover-scale"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(asset.id)}
+                            className="btn-hover-scale text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingAsset ? 'Edit Aset' : 'Tambah Aset Baru'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingAsset 
+                ? 'Perbarui informasi aset Anda'
+                : 'Masukkan detail aset yang akan dicatat'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nama Aset*</Label>
+              <Input
+                id="name"
+                placeholder="Contoh: Rumah, Mobil, Laptop, dll"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Kategori*</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih kategori" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="value">Nilai Aset*</Label>
+              <Input
+                id="value"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0"
+                value={formData.value}
+                onChange={(e) => setFormData({...formData, value: e.target.value})}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="purchase_date">Tanggal Pembelian</Label>
+              <Input
+                id="purchase_date"
+                type="date"
+                value={formData.purchase_date}
+                onChange={(e) => setFormData({...formData, purchase_date: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Keterangan</Label>
+              <Textarea
+                id="description"
+                placeholder="Tambahkan keterangan atau catatan..."
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                rows={3}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+              >
+                Batal
+              </Button>
+              <Button type="submit" className="btn-hover-scale">
+                {editingAsset ? 'Perbarui' : 'Simpan'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default Assets;
