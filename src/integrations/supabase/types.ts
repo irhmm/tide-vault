@@ -16,34 +16,52 @@ export type Database = {
     Tables: {
       assets: {
         Row: {
+          asset_type: string | null
           category: string
           created_at: string
           description: string | null
+          exchange_rate: number | null
           id: string
           name: string
+          original_unit: string | null
+          original_value: number | null
           purchase_date: string | null
+          rate_last_updated: string | null
+          symbol: string | null
           updated_at: string
           user_id: string
           value: number
         }
         Insert: {
+          asset_type?: string | null
           category: string
           created_at?: string
           description?: string | null
+          exchange_rate?: number | null
           id?: string
           name: string
+          original_unit?: string | null
+          original_value?: number | null
           purchase_date?: string | null
+          rate_last_updated?: string | null
+          symbol?: string | null
           updated_at?: string
           user_id: string
           value: number
         }
         Update: {
+          asset_type?: string | null
           category?: string
           created_at?: string
           description?: string | null
+          exchange_rate?: number | null
           id?: string
           name?: string
+          original_unit?: string | null
+          original_value?: number | null
           purchase_date?: string | null
+          rate_last_updated?: string | null
+          symbol?: string | null
           updated_at?: string
           user_id?: string
           value?: number
@@ -176,6 +194,33 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      supported_assets: {
+        Row: {
+          api_endpoint: string | null
+          asset_type: string
+          created_at: string
+          id: string
+          name: string
+          symbol: string
+        }
+        Insert: {
+          api_endpoint?: string | null
+          asset_type: string
+          created_at?: string
+          id?: string
+          name: string
+          symbol: string
+        }
+        Update: {
+          api_endpoint?: string | null
+          asset_type?: string
+          created_at?: string
+          id?: string
+          name?: string
+          symbol?: string
         }
         Relationships: []
       }
