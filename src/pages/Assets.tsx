@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Wallet, Plus, Pencil, Trash2, Search, Filter } from 'lucide-react';
+import { Wallet, Plus, Pencil, Trash2, Search, Filter, RefreshCw } from 'lucide-react';
 import ExportButton from '@/components/ExportButton';
 
 interface Asset {
@@ -21,17 +21,33 @@ interface Asset {
   purchase_date: string | null;
   description: string | null;
   created_at: string;
+  original_value?: number;
+  original_unit?: string;
+  asset_type?: string;
+  symbol?: string;
+  exchange_rate?: number;
+  rate_last_updated?: string;
+}
+
+interface SupportedAsset {
+  id: string;
+  symbol: string;
+  name: string;
+  asset_type: string;
+  api_endpoint: string;
 }
 
 const Assets = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [supportedAssets, setSupportedAssets] = useState<SupportedAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [updatingRates, setUpdatingRates] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -39,6 +55,10 @@ const Assets = () => {
     value: '',
     purchase_date: '',
     description: '',
+    asset_type: 'physical',
+    original_value: '',
+    original_unit: '',
+    symbol: '',
   });
 
   const categories = [
@@ -51,9 +71,18 @@ const Assets = () => {
     'Lainnya'
   ];
 
+  const assetTypes = [
+    { value: 'physical', label: 'Aset Fisik' },
+    { value: 'crypto', label: 'Cryptocurrency' },
+    { value: 'precious_metal', label: 'Logam Mulia' },
+    { value: 'stock', label: 'Saham' },
+    { value: 'currency', label: 'Mata Uang Asing' },
+  ];
+
   useEffect(() => {
     if (user) {
       fetchAssets();
+      fetchSupportedAssets();
     }
   }, [user]);
 
@@ -79,13 +108,47 @@ const Assets = () => {
     }
   };
 
+  const fetchSupportedAssets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('supported_assets')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setSupportedAssets(data || []);
+    } catch (error) {
+      console.error('Error fetching supported assets:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.category || !formData.value) {
+    // Basic validation
+    if (!formData.name || !formData.category) {
       toast({
         title: "Error",
-        description: "Nama, kategori, dan nilai aset wajib diisi",
+        description: "Nama dan kategori aset wajib diisi",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validation for investment assets
+    if (formData.asset_type !== 'physical') {
+      if (!formData.original_value || !formData.symbol) {
+        toast({
+          title: "Error",
+          description: "Nilai original dan simbol wajib diisi untuk aset investasi",
+          variant: "destructive"
+        });
+        return;
+      }
+    } else if (!formData.value) {
+      toast({
+        title: "Error",
+        description: "Nilai aset wajib diisi untuk aset fisik",
         variant: "destructive"
       });
       return;
@@ -95,10 +158,17 @@ const Assets = () => {
       const assetData = {
         name: formData.name,
         category: formData.category,
-        value: parseFloat(formData.value),
+        value: formData.asset_type === 'physical' 
+          ? parseFloat(formData.value) 
+          : (formData.original_value ? parseFloat(formData.original_value) : 0),
         purchase_date: formData.purchase_date || null,
         description: formData.description || null,
         user_id: user?.id,
+        asset_type: formData.asset_type,
+        original_value: formData.asset_type !== 'physical' ? parseFloat(formData.original_value) : null,
+        original_unit: formData.asset_type !== 'physical' ? formData.original_unit : null,
+        symbol: formData.asset_type !== 'physical' ? formData.symbol : null,
+        exchange_rate: formData.asset_type !== 'physical' ? 1 : null,
       };
 
       if (editingAsset) {
@@ -145,9 +215,13 @@ const Assets = () => {
     setFormData({
       name: asset.name,
       category: asset.category,
-      value: asset.value.toString(),
+      value: asset.asset_type === 'physical' ? asset.value.toString() : '',
       purchase_date: asset.purchase_date || '',
       description: asset.description || '',
+      asset_type: asset.asset_type || 'physical',
+      original_value: asset.original_value?.toString() || '',
+      original_unit: asset.original_unit || '',
+      symbol: asset.symbol || '',
     });
     setDialogOpen(true);
   };
@@ -188,6 +262,10 @@ const Assets = () => {
       value: '',
       purchase_date: '',
       description: '',
+      asset_type: 'physical',
+      original_value: '',
+      original_unit: '',
+      symbol: '',
     });
   };
 
@@ -195,6 +273,32 @@ const Assets = () => {
     resetForm();
     setEditingAsset(null);
     setDialogOpen(true);
+  };
+
+  const updateExchangeRates = async () => {
+    setUpdatingRates(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('update-exchange-rates');
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Berhasil",
+        description: "Nilai tukar berhasil diperbarui",
+      });
+      
+      // Refresh assets to show updated values
+      fetchAssets();
+    } catch (error) {
+      console.error('Error updating exchange rates:', error);
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui nilai tukar",
+        variant: "destructive"
+      });
+    } finally {
+      setUpdatingRates(false);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -217,11 +321,19 @@ const Assets = () => {
   const exportData = filteredAssets.map(asset => ({
     'Nama Aset': asset.name,
     'Kategori': asset.category,
-    'Nilai': asset.value,
+    'Tipe': asset.asset_type || 'physical',
+    'Nilai Original': asset.original_value || '-',
+    'Unit': asset.original_unit || '-',
+    'Simbol': asset.symbol || '-',
+    'Nilai IDR': asset.value,
     'Tanggal Beli': asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString('id-ID') : '-',
     'Keterangan': asset.description || '-',
     'Tanggal Dibuat': new Date(asset.created_at).toLocaleDateString('id-ID'),
   }));
+
+  const getFilteredSupportedAssets = () => {
+    return supportedAssets.filter(asset => asset.asset_type === formData.asset_type);
+  };
 
   if (loading) {
     return (
@@ -242,7 +354,7 @@ const Assets = () => {
     <div className="fade-in">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Aset</h1>
-        <p className="text-muted-foreground">Kelola dan pantau aset pribadi Anda</p>
+        <p className="text-muted-foreground">Kelola dan pantau aset pribadi serta investasi Anda</p>
       </div>
 
       {/* Summary Card */}
@@ -294,6 +406,16 @@ const Assets = () => {
             filename="data_aset"
             disabled={filteredAssets.length === 0}
           />
+          <Button 
+            onClick={updateExchangeRates}
+            variant="outline"
+            size="sm"
+            disabled={updatingRates}
+            className="btn-hover-scale"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${updatingRates ? 'animate-spin' : ''}`} />
+            Update Nilai Tukar
+          </Button>
           <Button onClick={openAddDialog} className="btn-hover-scale">
             <Plus className="w-4 h-4 mr-2" />
             Tambah Aset
@@ -310,7 +432,9 @@ const Assets = () => {
                 <TableRow>
                   <TableHead>Nama Aset</TableHead>
                   <TableHead>Kategori</TableHead>
-                  <TableHead>Nilai</TableHead>
+                  <TableHead>Tipe</TableHead>
+                  <TableHead>Nilai Original</TableHead>
+                  <TableHead>Nilai IDR</TableHead>
                   <TableHead>Tanggal Beli</TableHead>
                   <TableHead>Keterangan</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
@@ -319,7 +443,7 @@ const Assets = () => {
               <TableBody>
                 {filteredAssets.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       {searchTerm || categoryFilter !== 'all' 
                         ? 'Tidak ada data yang sesuai dengan filter' 
                         : 'Belum ada data aset. Tambah data pertama Anda!'
@@ -331,7 +455,44 @@ const Assets = () => {
                     <TableRow key={asset.id} className="table-row-hover">
                       <TableCell className="font-medium">{asset.name}</TableCell>
                       <TableCell>{asset.category}</TableCell>
-                      <TableCell>{formatCurrency(asset.value)}</TableCell>
+                      <TableCell>
+                        <span className="capitalize">
+                          {asset.asset_type === 'physical' ? 'Fisik' : 
+                           asset.asset_type === 'crypto' ? 'Crypto' :
+                           asset.asset_type === 'precious_metal' ? 'Logam Mulia' :
+                           asset.asset_type === 'stock' ? 'Saham' :
+                           asset.asset_type === 'currency' ? 'Mata Uang' : 'Fisik'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {asset.original_value && asset.symbol ? (
+                          <div className="space-y-1">
+                            <div className="font-medium">
+                              {asset.original_value} {asset.original_unit || asset.symbol}
+                            </div>
+                            {asset.exchange_rate && (
+                              <div className="text-xs text-muted-foreground">
+                                Rate: {formatCurrency(asset.exchange_rate)}
+                              </div>
+                            )}
+                            {asset.rate_last_updated && (
+                              <div className="text-xs text-muted-foreground">
+                                Update: {new Date(asset.rate_last_updated).toLocaleDateString('id-ID')} {new Date(asset.rate_last_updated).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            )}
+                          </div>
+                        ) : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">{formatCurrency(asset.value)}</div>
+                          {asset.asset_type !== 'physical' && asset.original_value && asset.exchange_rate && (
+                            <div className="text-xs text-muted-foreground">
+                              Auto-calculated
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         {asset.purchase_date 
                           ? new Date(asset.purchase_date).toLocaleDateString('id-ID')
@@ -372,7 +533,7 @@ const Assets = () => {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingAsset ? 'Edit Aset' : 'Tambah Aset Baru'}
@@ -390,7 +551,7 @@ const Assets = () => {
               <Label htmlFor="name">Nama Aset*</Label>
               <Input
                 id="name"
-                placeholder="Contoh: Rumah, Mobil, Laptop, dll"
+                placeholder="Contoh: Rumah, Mobil, 1 BTC, 10 gram emas"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 required
@@ -412,18 +573,92 @@ const Assets = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="value">Nilai Aset*</Label>
-              <Input
-                id="value"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0"
-                value={formData.value}
-                onChange={(e) => setFormData({...formData, value: e.target.value})}
-                required
-              />
+              <Label htmlFor="asset_type">Tipe Aset*</Label>
+              <Select value={formData.asset_type} onValueChange={(value) => setFormData({...formData, asset_type: value, symbol: '', original_value: '', original_unit: ''})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih tipe aset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assetTypes.map(type => (
+                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            {formData.asset_type !== 'physical' ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="symbol">Simbol/Aset*</Label>
+                  <Select value={formData.symbol} onValueChange={(value) => {
+                    const selected = supportedAssets.find(asset => asset.symbol === value);
+                    setFormData({
+                      ...formData, 
+                      symbol: value,
+                      original_unit: selected?.asset_type === 'crypto' ? value : 
+                                   selected?.asset_type === 'precious_metal' ? 'oz' :
+                                   selected?.asset_type === 'stock' ? 'lembar' :
+                                   selected?.asset_type === 'currency' ? value : ''
+                    });
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih simbol aset" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getFilteredSupportedAssets().map(asset => (
+                        <SelectItem key={asset.symbol} value={asset.symbol}>
+                          {asset.symbol} - {asset.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="original_value">Jumlah*</Label>
+                    <Input
+                      id="original_value"
+                      type="number"
+                      min="0"
+                      step="0.00000001"
+                      placeholder="1.5"
+                      value={formData.original_value}
+                      onChange={(e) => setFormData({...formData, original_value: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="original_unit">Unit</Label>
+                    <Input
+                      id="original_unit"
+                      placeholder="BTC, oz, lembar"
+                      value={formData.original_unit}
+                      onChange={(e) => setFormData({...formData, original_unit: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div className="text-xs text-muted-foreground p-3 bg-muted rounded-md">
+                  💡 Nilai IDR akan dihitung otomatis berdasarkan nilai tukar terkini. 
+                  Klik "Update Nilai Tukar" untuk mendapatkan harga terbaru.
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="value">Nilai Aset (IDR)*</Label>
+                <Input
+                  id="value"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="5000000"
+                  value={formData.value}
+                  onChange={(e) => setFormData({...formData, value: e.target.value})}
+                  required
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="purchase_date">Tanggal Pembelian</Label>
