@@ -250,20 +250,48 @@ const Savings = () => {
       </div>
 
       {/* Summary Card */}
-      <Card className="financial-card mb-6">
-        <CardHeader className="financial-card-header">
-          <CardTitle className="flex items-center">
-            <PiggyBank className="w-6 h-6 mr-2 text-primary" />
-            Total Saldo Tabungan
+      <Card className="summary-card mb-6 group">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <CardHeader className="relative z-10 pb-4">
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="icon-container mr-4">
+                <PiggyBank className="w-7 h-7 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground">Total Saldo Tabungan</h3>
+                <p className="text-sm text-muted-foreground">Simpanan dan investasi Anda</p>
+              </div>
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="financial-amount text-primary">
-            {formatCurrency(totalBalance)}
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            {filteredSavings.length} akun terdaftar
-          </p>
+        <CardContent className="relative z-10 pt-0">
+          <div className="space-y-4">
+            <div className="flex items-baseline justify-between">
+              <p className="financial-amount gradient-text-primary">
+                {formatCurrency(totalBalance)}
+              </p>
+              <div className="live-indicator">
+                <div className="live-dot"></div>
+                <span className="text-sm font-medium">Live</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between pt-4 border-t border-border/50">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-primary/20 rounded-full"></div>
+                <span className="text-sm font-medium text-muted-foreground">
+                  {filteredSavings.length} akun terdaftar
+                </span>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Terakhir diperbarui</p>
+                <p className="text-xs font-medium text-foreground">
+                  {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -306,7 +334,7 @@ const Savings = () => {
       </div>
 
       {/* Table */}
-      <Card className="financial-card">
+      <Card className="table-container">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>

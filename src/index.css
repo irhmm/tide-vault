@@ -126,54 +126,137 @@ All colors MUST be HSL.
 }
 
 @layer components {
-  /* Financial card styles */
+  /* Enhanced financial card styles */
   .financial-card {
-    @apply bg-card rounded-xl border shadow-medium hover:shadow-strong transition-all duration-300 p-6;
+    @apply relative overflow-hidden bg-gradient-to-br from-card via-card to-accent/5 rounded-2xl border-2 border-primary/10 shadow-soft hover:shadow-glow transition-all duration-300;
+  }
+
+  .financial-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.05) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .financial-card:hover::before {
+    opacity: 1;
   }
 
   .financial-card-header {
-    @apply flex items-center justify-between mb-4;
+    @apply relative z-10 flex items-center justify-between p-6 pb-3;
+  }
+
+  .financial-card-content {
+    @apply relative z-10 p-6 pt-3;
+  }
+
+  /* Enhanced summary card for hero sections */
+  .summary-card {
+    @apply relative overflow-hidden bg-gradient-to-br from-primary/5 via-card to-accent/5 border-2 border-primary/10 rounded-2xl shadow-glow hover:shadow-strong transition-all duration-300;
+  }
+
+  .summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.05) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .summary-card:hover::before {
+    opacity: 1;
   }
 
   .financial-amount {
-    @apply text-2xl font-bold bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent;
+    @apply text-3xl md:text-4xl font-black bg-gradient-to-r from-primary via-primary-hover to-primary bg-clip-text text-transparent;
   }
 
   .financial-label {
-    @apply text-sm font-medium text-muted-foreground uppercase tracking-wide;
+    @apply text-sm font-semibold text-muted-foreground uppercase tracking-wider;
   }
 
-  /* Button hover animations */
+  /* Icon container styles */
+  .icon-container {
+    @apply p-3 rounded-xl bg-primary/10 hover:bg-primary/15 transition-all duration-300 shadow-soft;
+  }
+
+  .icon-container-destructive {
+    @apply p-3 rounded-xl bg-destructive/10 hover:bg-destructive/15 transition-all duration-300 shadow-soft;
+  }
+
+  .icon-container-success {
+    @apply p-3 rounded-xl bg-success/10 hover:bg-success/15 transition-all duration-300 shadow-soft;
+  }
+
+  .icon-container-warning {
+    @apply p-3 rounded-xl bg-warning/10 hover:bg-warning/15 transition-all duration-300 shadow-soft;
+  }
+
+  /* Enhanced button animations */
   .btn-hover-scale {
-    @apply transform transition-all duration-200 hover:scale-105 active:scale-95;
+    @apply transform transition-all duration-200 hover:scale-105 hover:shadow-medium active:scale-95;
   }
 
-  /* Stats grid */
+  /* Stats grid with improved spacing */
   .stats-grid {
     @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6;
   }
 
-  /* Navbar gradient */
-  .navbar-gradient {
-    @apply bg-gradient-to-r from-primary to-primary-hover;
+  /* Enhanced table styles */
+  .table-container {
+    @apply relative overflow-hidden bg-gradient-to-br from-card to-accent/5 rounded-2xl border-2 border-primary/10 shadow-soft;
   }
 
-  /* Table hover effect */
   .table-row-hover {
-    @apply hover:bg-accent/30 transition-colors duration-200;
+    @apply hover:bg-gradient-to-r hover:from-primary/5 hover:to-accent/10 transition-all duration-200;
   }
 
-  /* Form inputs */
-  .form-input {
-    @apply bg-input/50 border-2 border-border hover:border-primary/50 focus:border-primary transition-colors duration-200;
+  /* Form container styles */
+  .form-container {
+    @apply space-y-6 p-6 bg-gradient-to-br from-card to-accent/5 rounded-xl border border-primary/10;
   }
 
-  /* Smooth animations */
+  /* Enhanced animations */
   .fade-in {
-    @apply animate-in fade-in-0 duration-500;
+    @apply animate-in fade-in-0 slide-in-from-bottom-4 duration-700 ease-out;
   }
 
   .slide-up {
-    @apply animate-in slide-in-from-bottom-4 duration-500;
+    @apply animate-in slide-in-from-bottom-8 duration-500 ease-out;
+  }
+
+  .scale-in {
+    @apply animate-in scale-in-95 duration-300 ease-out;
+  }
+
+  /* Live indicator */
+  .live-indicator {
+    @apply flex items-center space-x-2 text-success;
+  }
+
+  .live-dot {
+    @apply w-2 h-2 bg-success rounded-full animate-pulse;
+  }
+
+  /* Gradient text utilities */
+  .gradient-text-primary {
+    @apply bg-gradient-to-r from-primary via-primary-hover to-primary bg-clip-text text-transparent;
+  }
+
+  .gradient-text-success {
+    @apply bg-gradient-to-r from-success to-success/80 bg-clip-text text-transparent;
+  }
+
+  .gradient-text-destructive {
+    @apply bg-gradient-to-r from-destructive to-destructive/80 bg-clip-text text-transparent;
   }
 }

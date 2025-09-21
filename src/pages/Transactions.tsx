@@ -285,50 +285,71 @@ const Transactions = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <Card className="financial-card">
-          <CardHeader className="financial-card-header">
-            <CardTitle className="flex items-center">
-              <TrendingUp className="w-6 h-6 mr-2 text-success" />
-              Total Pemasukan
+        <Card className="summary-card group">
+          <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <CardHeader className="relative z-10 pb-4">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="icon-container-success mr-3">
+                  <TrendingUp className="w-6 h-6 text-success" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">Total Pemasukan</h3>
+                  <p className="text-xs text-muted-foreground">{currentMonthName}</p>
+                </div>
+              </div>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="financial-amount text-success">
+          <CardContent className="relative z-10 pt-0">
+            <p className="text-2xl font-black gradient-text-success">
               {formatCurrency(totalIncome)}
             </p>
-            <p className="text-sm text-muted-foreground mt-2">{currentMonthName}</p>
           </CardContent>
         </Card>
 
-        <Card className="financial-card">
-          <CardHeader className="financial-card-header">
-            <CardTitle className="flex items-center">
-              <TrendingDown className="w-6 h-6 mr-2 text-warning" />
-              Total Pengeluaran
+        <Card className="summary-card group">
+          <div className="absolute inset-0 bg-gradient-to-br from-warning/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <CardHeader className="relative z-10 pb-4">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="icon-container-warning mr-3">
+                  <TrendingDown className="w-6 h-6 text-warning" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">Total Pengeluaran</h3>
+                  <p className="text-xs text-muted-foreground">{currentMonthName}</p>
+                </div>
+              </div>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="financial-amount text-warning">
+          <CardContent className="relative z-10 pt-0">
+            <p className="text-2xl font-black bg-gradient-to-r from-warning to-warning/80 bg-clip-text text-transparent">
               {formatCurrency(totalExpense)}
             </p>
-            <p className="text-sm text-muted-foreground mt-2">{currentMonthName}</p>
           </CardContent>
         </Card>
 
-        <Card className="financial-card">
-          <CardHeader className="financial-card-header">
-            <CardTitle className="flex items-center">
-              <Calendar className="w-6 h-6 mr-2 text-primary" />
-              Saldo Bersih
+        <Card className="summary-card group">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <CardHeader className="relative z-10 pb-4">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="icon-container mr-3">
+                  <Calendar className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">Saldo Bersih</h3>
+                  <p className="text-xs text-muted-foreground">{currentMonthName}</p>
+                </div>
+              </div>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className={`financial-amount ${
-              (totalIncome - totalExpense) >= 0 ? 'text-success' : 'text-destructive'
+          <CardContent className="relative z-10 pt-0">
+            <p className={`text-2xl font-black ${
+              (totalIncome - totalExpense) >= 0 ? 'gradient-text-success' : 'gradient-text-destructive'
             }`}>
               {formatCurrency(totalIncome - totalExpense)}
             </p>
-            <p className="text-sm text-muted-foreground mt-2">{currentMonthName}</p>
           </CardContent>
         </Card>
       </div>
@@ -377,7 +398,7 @@ const Transactions = () => {
       </div>
 
       {/* Table */}
-      <Card className="financial-card">
+      <Card className="table-container">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>

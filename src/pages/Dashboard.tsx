@@ -148,17 +148,26 @@ const Dashboard = () => {
 
       <div className="stats-grid mb-8">
         {/* Net Worth */}
-        <Card className="financial-card col-span-1 md:col-span-2">
-          <CardHeader className="financial-card-header">
-            <CardTitle className="financial-label">Total Kekayaan Bersih</CardTitle>
-            <DollarSign className="w-8 h-8 text-primary" />
+        <Card className="summary-card col-span-1 md:col-span-2 group">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <CardHeader className="relative z-10 pb-4">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="icon-container mr-4">
+                  <DollarSign className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-foreground">Total Kekayaan Bersih</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {stats.netWorth >= 0 ? 'Posisi keuangan positif' : 'Perlu perhatian lebih'}
+                  </p>
+                </div>
+              </div>
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className={`financial-amount ${stats.netWorth >= 0 ? 'text-success' : 'text-destructive'}`}>
+          <CardContent className="relative z-10 pt-0">
+            <p className={`financial-amount ${stats.netWorth >= 0 ? 'gradient-text-success' : 'gradient-text-destructive'}`}>
               {formatCurrency(stats.netWorth)}
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              {stats.netWorth >= 0 ? 'Posisi keuangan positif' : 'Perlu perhatian lebih'}
             </p>
           </CardContent>
         </Card>
@@ -231,7 +240,7 @@ const Dashboard = () => {
 
       {/* Quick Insights */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="financial-card">
+        <Card className="table-container">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Calendar className="w-5 h-5 mr-2 text-primary" />
@@ -268,7 +277,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="financial-card">
+        <Card className="table-container">
           <CardHeader>
             <CardTitle className="flex items-center">
               <TrendingUp className="w-5 h-5 mr-2 text-primary" />

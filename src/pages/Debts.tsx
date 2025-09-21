@@ -249,20 +249,48 @@ const Debts = () => {
       </div>
 
       {/* Summary Card */}
-      <Card className="financial-card mb-6">
-        <CardHeader className="financial-card-header">
-          <CardTitle className="flex items-center">
-            <CreditCard className="w-6 h-6 mr-2 text-destructive" />
-            Total Hutang Belum Lunas
+      <Card className="summary-card mb-6 group">
+        <div className="absolute inset-0 bg-gradient-to-br from-destructive/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <CardHeader className="relative z-10 pb-4">
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="icon-container-destructive mr-4">
+                <CreditCard className="w-7 h-7 text-destructive" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground">Total Hutang Belum Lunas</h3>
+                <p className="text-sm text-muted-foreground">Kewajiban yang perlu diselesaikan</p>
+              </div>
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="financial-amount text-destructive">
-            {formatCurrency(totalAmount)}
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            {filteredDebts.filter(d => d.status !== 'paid').length} hutang aktif
-          </p>
+        <CardContent className="relative z-10 pt-0">
+          <div className="space-y-4">
+            <div className="flex items-baseline justify-between">
+              <p className="financial-amount gradient-text-destructive">
+                {formatCurrency(totalAmount)}
+              </p>
+              <div className="live-indicator">
+                <div className="live-dot"></div>
+                <span className="text-sm font-medium">Live</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between pt-4 border-t border-border/50">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-destructive/20 rounded-full"></div>
+                <span className="text-sm font-medium text-muted-foreground">
+                  {filteredDebts.filter(d => d.status !== 'paid').length} hutang aktif
+                </span>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Terakhir diperbarui</p>
+                <p className="text-xs font-medium text-foreground">
+                  {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -305,7 +333,7 @@ const Debts = () => {
       </div>
 
       {/* Table */}
-      <Card className="financial-card">
+      <Card className="table-container">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
