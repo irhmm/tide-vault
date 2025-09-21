@@ -401,17 +401,7 @@ const Savings = () => {
                 )}
               </TableBody>
             </Table>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bank">Bank</Label>
-              <Input
-                id="bank"
-                placeholder="Contoh: BCA, Mandiri, BNI, BRI"
-                value={formData.bank}
-                onChange={(e) => setFormData({...formData, bank: e.target.value})}
-              />
-            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -439,6 +429,16 @@ const Savings = () => {
                 value={formData.account_name}
                 onChange={(e) => setFormData({...formData, account_name: e.target.value})}
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="bank">Bank</Label>
+              <Input
+                id="bank"
+                placeholder="Contoh: BCA, Mandiri, BNI, BRI"
+                value={formData.bank}
+                onChange={(e) => setFormData({...formData, bank: e.target.value})}
               />
             </div>
 
