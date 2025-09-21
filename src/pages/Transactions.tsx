@@ -47,6 +47,31 @@ const Transactions = () => {
     }
   }, [user, monthFilter]);
 
+  // Real-time updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('financial_transactions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'financial_transactions',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchTransactions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, monthFilter]);
+
   const fetchTransactions = async () => {
     if (!user) return;
     
@@ -208,7 +233,9 @@ const Transactions = () => {
   };
 
   const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.keterangan?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !searchTerm || 
+      (transaction.keterangan?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       transaction.jenis.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesType = typeFilter === 'all' || transaction.jenis === typeFilter;
     return matchesSearch && matchesType;
   });
@@ -467,7 +494,7 @@ const Transactions = () => {
                   id="keterangan"
                   value={formData.keterangan}
                   onChange={(e) => setFormData({...formData, keterangan: e.target.value})}
-                  placeholder="Masukkan keterangan transaksi..."
+                  placeholder="Masukkan keterangan transaksi (opsional)..."
                   className="border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
