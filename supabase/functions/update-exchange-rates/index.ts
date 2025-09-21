@@ -195,14 +195,24 @@ serve(async (req) => {
         if (asset.symbol === 'XAU' && asset.original_unit) {
           if (asset.original_unit === 'gram') {
             rateKey = 'XAU_GRAM';
+            console.log(`Using Antam rate for XAU gram: ${rates['XAU_GRAM']} IDR/gram`);
           } else if (asset.original_unit === 'kg') {
             rateKey = 'XAU_KG';
+            console.log(`Using Antam rate for XAU kilogram: ${rates['XAU_KG']} IDR/kg`);
+          } else if (asset.original_unit === 'oz') {
+            rateKey = 'XAU';
+            console.log(`Using USD->IDR converted rate for XAU ounce: ${rates['XAU']} IDR/oz`);
           }
         } else if (asset.symbol === 'XAG' && asset.original_unit) {
           if (asset.original_unit === 'gram') {
             rateKey = 'XAG_GRAM';
+            console.log(`Using USD->IDR converted rate for XAG gram: ${rates['XAG_GRAM']} IDR/gram`);
           } else if (asset.original_unit === 'kg') {
             rateKey = 'XAG_KG';
+            console.log(`Using USD->IDR converted rate for XAG kilogram: ${rates['XAG_KG']} IDR/kg`);
+          } else if (asset.original_unit === 'oz') {
+            rateKey = 'XAG';
+            console.log(`Using USD->IDR converted rate for XAG ounce: ${rates['XAG']} IDR/oz`);
           }
         }
         
