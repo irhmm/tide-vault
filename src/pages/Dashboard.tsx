@@ -65,12 +65,17 @@ const Dashboard = () => {
         .eq('user_id', user?.id);
 
       // Fetch transactions for current month
+      const year = new Date().getFullYear();
+      const month = new Date().getMonth() + 1;
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 1);
+      
       const { data: transactions } = await supabase
         .from('financial_transactions')
         .select('jenis, jumlah')
         .eq('user_id', user?.id)
-        .gte('tanggal', `${currentMonth}-01`)
-        .lt('tanggal', `${currentMonth}-32`);
+        .gte('tanggal', startDate.toISOString())
+        .lt('tanggal', endDate.toISOString());
 
       // Calculate totals
       const totalDebts = debts?.reduce((sum, debt) => 
