@@ -15,6 +15,7 @@ import { formatIndonesianDate } from '@/lib/utils';
 
 interface DashboardStats {
   totalDebts: number;
+  totalReceivables: number;
   totalAssets: number;
   totalSavings: number;
   monthlyIncome: number;
@@ -26,6 +27,7 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalDebts: 0,
+    totalReceivables: 0,
     totalAssets: 0,
     totalSavings: 0,
     monthlyIncome: 0,
@@ -44,10 +46,10 @@ const Dashboard = () => {
     try {
       const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
 
-      // Fetch debts
+      // Fetch debts and receivables
       const { data: debts } = await supabase
         .from('debts')
-        .select('amount, status')
+        .select('amount, status, debt_type')
         .eq('user_id', user?.id);
 
       // Fetch assets
@@ -72,7 +74,10 @@ const Dashboard = () => {
 
       // Calculate totals
       const totalDebts = debts?.reduce((sum, debt) => 
-        debt.status !== 'paid' ? sum + Number(debt.amount) : sum, 0) || 0;
+        debt.debt_type === 'debt' && debt.status !== 'paid' ? sum + Number(debt.amount) : sum, 0) || 0;
+      
+      const totalReceivables = debts?.reduce((sum, debt) => 
+        debt.debt_type === 'receivable' && debt.status !== 'paid' ? sum + Number(debt.amount) : sum, 0) || 0;
       
       const totalAssets = assets?.reduce((sum, asset) => 
         sum + Number(asset.value), 0) || 0;
@@ -86,10 +91,11 @@ const Dashboard = () => {
       const monthlyExpenses = transactions?.reduce((sum, transaction) => 
         transaction.type === 'expense' ? sum + Number(transaction.amount) : sum, 0) || 0;
 
-      const netWorth = totalAssets + totalSavings - totalDebts;
+      const netWorth = totalAssets + totalSavings + totalReceivables - totalDebts;
 
       setStats({
         totalDebts,
+        totalReceivables,
         totalAssets,
         totalSavings,
         monthlyIncome,
@@ -208,6 +214,19 @@ const Dashboard = () => {
           <CardContent>
             <p className="financial-amount text-destructive">
               {formatCurrency(stats.totalDebts)}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Total Receivables */}
+        <Card className="financial-card">
+          <CardHeader className="financial-card-header">
+            <CardTitle className="financial-label">Total Piutang</CardTitle>
+            <CreditCard className="w-6 h-6 text-success" />
+          </CardHeader>
+          <CardContent>
+            <p className="financial-amount text-success">
+              {formatCurrency(stats.totalReceivables)}
             </p>
           </CardContent>
         </Card>

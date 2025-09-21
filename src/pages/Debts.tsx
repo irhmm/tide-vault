@@ -15,32 +15,35 @@ import { CreditCard, Plus, Pencil, Trash2, Search, Filter } from 'lucide-react';
 import { formatIndonesianDate } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 
-interface Debt {
+interface DebtReceivable {
   id: string;
-  creditor_name: string;
+  party_name: string;
   amount: number;
   description: string | null;
   due_date: string | null;
   status: 'paid' | 'unpaid' | 'partial';
+  debt_type: 'debt' | 'receivable';
   created_at: string;
 }
 
 const Debts = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [debts, setDebts] = useState<Debt[]>([]);
+  const [debts, setDebts] = useState<DebtReceivable[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
+  const [editingDebt, setEditingDebt] = useState<DebtReceivable | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   
   const [formData, setFormData] = useState({
-    creditor_name: '',
+    party_name: '',
     amount: '',
     description: '',
     due_date: '',
     status: 'unpaid' as 'paid' | 'unpaid' | 'partial',
+    debt_type: 'debt' as 'debt' | 'receivable',
   });
 
   useEffect(() => {
@@ -58,7 +61,7 @@ const Debts = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setDebts((data as Debt[]) || []);
+      setDebts((data as DebtReceivable[]) || []);
     } catch (error) {
       console.error('Error fetching debts:', error);
       toast({
@@ -74,10 +77,10 @@ const Debts = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.creditor_name || !formData.amount) {
+    if (!formData.party_name || !formData.amount) {
       toast({
         title: "Error",
-        description: "Nama kreditor dan jumlah wajib diisi",
+        description: "Nama pihak dan jumlah wajib diisi",
         variant: "destructive"
       });
       return;
@@ -85,11 +88,12 @@ const Debts = () => {
 
     try {
       const debtData = {
-        creditor_name: formData.creditor_name,
+        party_name: formData.party_name,
         amount: parseFloat(formData.amount),
         description: formData.description || null,
         due_date: formData.due_date || null,
         status: formData.status,
+        debt_type: formData.debt_type,
         user_id: user?.id,
       };
 
@@ -103,7 +107,7 @@ const Debts = () => {
         
         toast({
           title: "Berhasil",
-          description: "Data hutang berhasil diperbarui",
+          description: `Data ${formData.debt_type === 'debt' ? 'hutang' : 'piutang'} berhasil diperbarui`,
         });
       } else {
         const { error } = await supabase
@@ -114,7 +118,7 @@ const Debts = () => {
         
         toast({
           title: "Berhasil",
-          description: "Data hutang berhasil ditambahkan",
+          description: `Data ${formData.debt_type === 'debt' ? 'hutang' : 'piutang'} berhasil ditambahkan`,
         });
       }
 
@@ -132,14 +136,15 @@ const Debts = () => {
     }
   };
 
-  const handleEdit = (debt: Debt) => {
+  const handleEdit = (debt: DebtReceivable) => {
     setEditingDebt(debt);
     setFormData({
-      creditor_name: debt.creditor_name,
+      party_name: debt.party_name,
       amount: debt.amount.toString(),
       description: debt.description || '',
       due_date: debt.due_date || '',
       status: debt.status,
+      debt_type: debt.debt_type,
     });
     setDialogOpen(true);
   };
@@ -159,7 +164,7 @@ const Debts = () => {
       
       toast({
         title: "Berhasil",
-        description: "Data hutang berhasil dihapus",
+        description: "Data berhasil dihapus",
       });
       
       fetchDebts();
@@ -175,11 +180,12 @@ const Debts = () => {
 
   const resetForm = () => {
     setFormData({
-      creditor_name: '',
+      party_name: '',
       amount: '',
       description: '',
       due_date: '',
       status: 'unpaid' as 'paid' | 'unpaid' | 'partial',
+      debt_type: 'debt' as 'debt' | 'receivable',
     });
   };
 
@@ -208,18 +214,29 @@ const Debts = () => {
     }
   };
 
+  const getTypeBadge = (type: string) => {
+    return type === 'debt' 
+      ? <Badge variant="destructive">Hutang</Badge>
+      : <Badge className="bg-success text-success-foreground">Piutang</Badge>;
+  };
+
   const filteredDebts = debts.filter(debt => {
-    const matchesSearch = debt.creditor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = debt.party_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          debt.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || debt.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesType = typeFilter === 'all' || debt.debt_type === typeFilter;
+    return matchesSearch && matchesStatus && matchesType;
   });
 
-  const totalAmount = filteredDebts.reduce((sum, debt) => 
-    debt.status !== 'paid' ? sum + debt.amount : sum, 0);
+  const totalDebts = filteredDebts.reduce((sum, debt) => 
+    debt.debt_type === 'debt' && debt.status !== 'paid' ? sum + debt.amount : sum, 0);
+  
+  const totalReceivables = filteredDebts.reduce((sum, debt) => 
+    debt.debt_type === 'receivable' && debt.status !== 'paid' ? sum + debt.amount : sum, 0);
 
   const exportData = filteredDebts.map(debt => ({
-    'Nama Kreditor': debt.creditor_name,
+    'Jenis': debt.debt_type === 'debt' ? 'Hutang' : 'Piutang',
+    'Nama Pihak': debt.party_name,
     'Jumlah': debt.amount,
     'Status': debt.status === 'paid' ? 'Lunas' : debt.status === 'partial' ? 'Sebagian' : 'Belum Lunas',
     'Jatuh Tempo': formatIndonesianDate(debt.due_date),
@@ -231,8 +248,8 @@ const Debts = () => {
     return (
       <div className="fade-in">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Catatan Hutang</h1>
-          <p className="text-muted-foreground">Kelola catatan hutang Anda</p>
+          <h1 className="text-3xl font-bold mb-2">Catatan Hutang & Piutang</h1>
+          <p className="text-muted-foreground">Kelola catatan hutang dan piutang Anda</p>
         </div>
         <div className="animate-pulse space-y-4">
           <div className="h-12 bg-muted rounded"></div>
@@ -245,55 +262,56 @@ const Debts = () => {
   return (
     <div className="fade-in">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Catatan Hutang</h1>
-        <p className="text-muted-foreground">Kelola dan pantau hutang Anda</p>
+        <h1 className="text-3xl font-bold mb-2">Catatan Hutang & Piutang</h1>
+        <p className="text-muted-foreground">Kelola dan pantau hutang serta piutang Anda</p>
       </div>
 
-      {/* Summary Card */}
-      <Card className="summary-card mb-6 group">
-        <div className="absolute inset-0 bg-gradient-to-br from-destructive/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        <CardHeader className="relative z-10 pb-4">
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="icon-container-destructive mr-4">
-                <CreditCard className="w-7 h-7 text-destructive" />
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <Card className="summary-card group">
+          <div className="absolute inset-0 bg-gradient-to-br from-destructive/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <CardHeader className="relative z-10 pb-4">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="icon-container-destructive mr-4">
+                  <CreditCard className="w-7 h-7 text-destructive" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">Total Hutang</h3>
+                  <p className="text-sm text-muted-foreground">Kewajiban yang perlu diselesaikan</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-foreground">Total Hutang Belum Lunas</h3>
-                <p className="text-sm text-muted-foreground">Kewajiban yang perlu diselesaikan</p>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="relative z-10 pt-0">
+            <p className="financial-amount gradient-text-destructive text-2xl">
+              {formatCurrency(totalDebts)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="summary-card group">
+          <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <CardHeader className="relative z-10 pb-4">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="icon-container-success mr-4">
+                  <CreditCard className="w-7 h-7 text-success" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">Total Piutang</h3>
+                  <p className="text-sm text-muted-foreground">Yang akan diterima</p>
+                </div>
               </div>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="relative z-10 pt-0">
-          <div className="space-y-4">
-            <div className="flex items-baseline justify-between">
-              <p className="financial-amount gradient-text-destructive">
-                {formatCurrency(totalAmount)}
-              </p>
-              <div className="live-indicator">
-                <div className="live-dot"></div>
-                <span className="text-sm font-medium">Live</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between pt-4 border-t border-border/50">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-destructive/20 rounded-full"></div>
-                <span className="text-sm font-medium text-muted-foreground">
-                  {filteredDebts.filter(d => d.status !== 'paid').length} hutang aktif
-                </span>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Terakhir diperbarui</p>
-                <p className="text-xs font-medium text-foreground">
-                  {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="relative z-10 pt-0">
+            <p className="financial-amount gradient-text-success text-2xl">
+              {formatCurrency(totalReceivables)}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Actions and Filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -301,12 +319,23 @@ const Debts = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Cari kreditor atau keterangan..."
+              placeholder="Cari nama pihak atau keterangan..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-40">
+              <Filter className="w-4 h-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Jenis</SelectItem>
+              <SelectItem value="debt">Hutang</SelectItem>
+              <SelectItem value="receivable">Piutang</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40">
               <Filter className="w-4 h-4 mr-2" />
@@ -323,12 +352,12 @@ const Debts = () => {
         <div className="flex gap-2">
           <ExportButton 
             data={exportData} 
-            filename="catatan_hutang"
+            filename="catatan_hutang_piutang"
             disabled={filteredDebts.length === 0}
           />
           <Button onClick={openAddDialog} className="btn-hover-scale">
             <Plus className="w-4 h-4 mr-2" />
-            Tambah Hutang
+            Tambah Data
           </Button>
         </div>
       </div>
@@ -340,7 +369,8 @@ const Debts = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Kreditor</TableHead>
+                  <TableHead>Jenis</TableHead>
+                  <TableHead>Nama Pihak</TableHead>
                   <TableHead>Jumlah</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Jatuh Tempo</TableHead>
@@ -351,17 +381,18 @@ const Debts = () => {
               <TableBody>
                 {filteredDebts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      {searchTerm || statusFilter !== 'all' 
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
                         ? 'Tidak ada data yang sesuai dengan filter' 
-                        : 'Belum ada data hutang. Tambah data pertama Anda!'
+                        : 'Belum ada data. Tambah data pertama Anda!'
                       }
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredDebts.map((debt) => (
                     <TableRow key={debt.id} className="table-row-hover">
-                      <TableCell className="font-medium">{debt.creditor_name}</TableCell>
+                      <TableCell>{getTypeBadge(debt.debt_type)}</TableCell>
+                      <TableCell className="font-medium">{debt.party_name}</TableCell>
                       <TableCell>{formatCurrency(debt.amount)}</TableCell>
                       <TableCell>{getStatusBadge(debt.status)}</TableCell>
                       <TableCell>
@@ -404,30 +435,47 @@ const Debts = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingDebt ? 'Edit Hutang' : 'Tambah Hutang Baru'}
+              {editingDebt ? 'Edit Data' : 'Tambah Data Baru'}
             </DialogTitle>
             <DialogDescription>
               {editingDebt 
-                ? 'Perbarui informasi hutang Anda'
-                : 'Masukkan detail hutang yang akan dicatat'
+                ? 'Perbarui informasi data Anda'
+                : 'Masukkan detail data yang akan dicatat'
               }
             </DialogDescription>
           </DialogHeader>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="creditor_name">Nama Kreditor*</Label>
+              <Label htmlFor="debt_type">Jenis*</Label>
+              <Select value={formData.debt_type} onValueChange={(value: any) => setFormData({...formData, debt_type: value})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="debt">Hutang (Saya berhutang kepada orang lain)</SelectItem>
+                  <SelectItem value="receivable">Piutang (Orang lain berhutang kepada saya)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="party_name">
+                {formData.debt_type === 'debt' ? 'Nama Kreditor*' : 'Nama Debitur*'}
+              </Label>
               <Input
-                id="creditor_name"
-                placeholder="Contoh: Bank ABC, Teman, dll"
-                value={formData.creditor_name}
-                onChange={(e) => setFormData({...formData, creditor_name: e.target.value})}
+                id="party_name"
+                placeholder={formData.debt_type === 'debt' ? 'Contoh: Bank ABC, Teman, dll' : 'Contoh: Teman, Keluarga, dll'}
+                value={formData.party_name}
+                onChange={(e) => setFormData({...formData, party_name: e.target.value})}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">Jumlah Hutang*</Label>
+              <Label htmlFor="amount">
+                {formData.debt_type === 'debt' ? 'Jumlah Hutang*' : 'Jumlah Piutang*'}
+              </Label>
               <Input
                 id="amount"
                 type="number"
