@@ -67,10 +67,10 @@ const Dashboard = () => {
       // Fetch transactions for current month
       const { data: transactions } = await supabase
         .from('financial_transactions')
-        .select('type, amount')
+        .select('jenis, jumlah')
         .eq('user_id', user?.id)
-        .gte('transaction_date', `${currentMonth}-01`)
-        .lt('transaction_date', `${currentMonth}-32`);
+        .gte('tanggal', `${currentMonth}-01`)
+        .lt('tanggal', `${currentMonth}-32`);
 
       // Calculate totals
       const totalDebts = debts?.reduce((sum, debt) => 
@@ -86,10 +86,10 @@ const Dashboard = () => {
         sum + Number(saving.balance), 0) || 0;
 
       const monthlyIncome = transactions?.reduce((sum, transaction) => 
-        transaction.type === 'income' ? sum + Number(transaction.amount) : sum, 0) || 0;
+        transaction.jenis === 'pemasukan' ? sum + Number(transaction.jumlah) : sum, 0) || 0;
       
       const monthlyExpenses = transactions?.reduce((sum, transaction) => 
-        transaction.type === 'expense' ? sum + Number(transaction.amount) : sum, 0) || 0;
+        transaction.jenis === 'pengeluaran' ? sum + Number(transaction.jumlah) : sum, 0) || 0;
 
       const netWorth = totalAssets + totalSavings + totalReceivables - totalDebts;
 

@@ -208,35 +208,32 @@ export type Database = {
       }
       financial_transactions: {
         Row: {
-          amount: number
-          category: string
           created_at: string
-          description: string | null
           id: string
-          transaction_date: string
-          type: string
+          jenis: string
+          jumlah: number
+          keterangan: string | null
+          tanggal: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          amount: number
-          category: string
           created_at?: string
-          description?: string | null
           id?: string
-          transaction_date?: string
-          type: string
+          jenis: string
+          jumlah: number
+          keterangan?: string | null
+          tanggal?: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          amount?: number
-          category?: string
           created_at?: string
-          description?: string | null
           id?: string
-          transaction_date?: string
-          type?: string
+          jenis?: string
+          jumlah?: number
+          keterangan?: string | null
+          tanggal?: string
           updated_at?: string
           user_id?: string
         }
