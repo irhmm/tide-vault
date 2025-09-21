@@ -67,20 +67,53 @@ serve(async (req) => {
           console.log('Using fallback USD to IDR rate');
         }
 
-        // Try to fetch from CoinGecko for precious metals (more reliable)
+        // Try to fetch gold from Antam (Indonesian official gold price) first
+        let antamGoldSuccess = false;
+        try {
+          // Fetch Antam gold price - this is more accurate for Indonesian physical gold
+          const antamResponse = await fetch('https://logam.pluang.com/api/v1/spot_prices/precious_metals');
+          const antamData = await antamResponse.json();
+          
+          if (antamData?.data?.gold?.buy_price) {
+            // Antam price is already in IDR per gram
+            const goldPerGramIDR = antamData.data.gold.buy_price;
+            rates['XAU_GRAM'] = goldPerGramIDR; // Price per gram (Antam)
+            rates['XAU_KG'] = goldPerGramIDR * 1000; // Price per kilogram
+            rates['XAU'] = goldPerGramIDR * 31.1035; // Price per ounce
+            antamGoldSuccess = true;
+            console.log('Successfully fetched Antam gold price:', goldPerGramIDR, 'IDR per gram');
+          }
+        } catch (antamError) {
+          console.error('Error fetching from Antam:', antamError);
+        }
+
+        // Fallback to CoinGecko for gold if Antam fails, and for silver
+        if (!antamGoldSuccess) {
+          try {
+            const metalResponse = await fetch(
+              'https://api.coingecko.com/api/v3/simple/price?ids=gold,silver&vs_currencies=usd'
+            );
+            const metalData = await metalResponse.json();
+            
+            if (metalData.gold?.usd && !antamGoldSuccess) {
+              // Gold price per ounce in USD, convert to IDR per ounce
+              const goldPerOunceIDR = metalData.gold.usd * usdToIdr;
+              rates['XAU'] = goldPerOunceIDR; // Price per ounce
+              rates['XAU_GRAM'] = goldPerOunceIDR / 31.1035; // Price per gram (1 oz = 31.1035 grams)
+              rates['XAU_KG'] = (goldPerOunceIDR / 31.1035) * 1000; // Price per kilogram
+              console.log('Using CoinGecko fallback for gold');
+            }
+          } catch (coinGeckoError) {
+            console.error('Error fetching from CoinGecko metals:', coinGeckoError);
+          }
+        }
+
+        // Always try to fetch silver from CoinGecko
         try {
           const metalResponse = await fetch(
-            'https://api.coingecko.com/api/v3/simple/price?ids=gold,silver&vs_currencies=usd'
+            'https://api.coingecko.com/api/v3/simple/price?ids=silver&vs_currencies=usd'
           );
           const metalData = await metalResponse.json();
-          
-          if (metalData.gold?.usd) {
-            // Gold price per ounce in USD, convert to IDR per ounce
-            const goldPerOunceIDR = metalData.gold.usd * usdToIdr;
-            rates['XAU'] = goldPerOunceIDR; // Price per ounce
-            rates['XAU_GRAM'] = goldPerOunceIDR / 31.1035; // Price per gram (1 oz = 31.1035 grams)
-            rates['XAU_KG'] = (goldPerOunceIDR / 31.1035) * 1000; // Price per kilogram
-          }
           
           if (metalData.silver?.usd) {
             // Silver price per ounce in USD, convert to IDR per ounce
