@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CreditCard, Plus, Pencil, Trash2, Search, Filter } from 'lucide-react';
+import { formatIndonesianDate } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 
 interface Debt {
@@ -221,9 +222,9 @@ const Debts = () => {
     'Nama Kreditor': debt.creditor_name,
     'Jumlah': debt.amount,
     'Status': debt.status === 'paid' ? 'Lunas' : debt.status === 'partial' ? 'Sebagian' : 'Belum Lunas',
-    'Jatuh Tempo': debt.due_date || '-',
+    'Jatuh Tempo': formatIndonesianDate(debt.due_date),
     'Keterangan': debt.description || '-',
-    'Tanggal Dibuat': new Date(debt.created_at).toLocaleDateString('id-ID'),
+    'Tanggal Dibuat': formatIndonesianDate(debt.created_at),
   }));
 
   if (loading) {
@@ -364,10 +365,7 @@ const Debts = () => {
                       <TableCell>{formatCurrency(debt.amount)}</TableCell>
                       <TableCell>{getStatusBadge(debt.status)}</TableCell>
                       <TableCell>
-                        {debt.due_date 
-                          ? new Date(debt.due_date).toLocaleDateString('id-ID')
-                          : '-'
-                        }
+                         {formatIndonesianDate(debt.due_date)}
                       </TableCell>
                       <TableCell className="max-w-xs truncate">
                         {debt.description || '-'}

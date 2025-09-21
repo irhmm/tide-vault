@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { TrendingUp, TrendingDown, Plus, Pencil, Trash2, Search, Filter, Calendar } from 'lucide-react';
+import { formatIndonesianDate } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 
 interface Transaction {
@@ -249,7 +250,7 @@ const Transactions = () => {
     .reduce((sum, t) => sum + t.amount, 0);
 
   const exportData = filteredTransactions.map(transaction => ({
-    'Tanggal': new Date(transaction.transaction_date).toLocaleDateString('id-ID'),
+    'Tanggal': formatIndonesianDate(transaction.transaction_date),
     'Jenis': transaction.type === 'income' ? 'Pemasukan' : 'Pengeluaran',
     'Kategori': transaction.category,
     'Jumlah': transaction.amount,
@@ -426,7 +427,7 @@ const Transactions = () => {
                   filteredTransactions.map((transaction) => (
                     <TableRow key={transaction.id} className="table-row-hover">
                       <TableCell>
-                        {new Date(transaction.transaction_date).toLocaleDateString('id-ID')}
+                        {formatIndonesianDate(transaction.transaction_date)}
                       </TableCell>
                       <TableCell>{getTypeBadge(transaction.type)}</TableCell>
                       <TableCell className="font-medium">{transaction.category}</TableCell>

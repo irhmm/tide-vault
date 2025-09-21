@@ -11,6 +11,7 @@ import {
   DollarSign,
   Calendar
 } from 'lucide-react';
+import { formatIndonesianDate } from '@/lib/utils';
 
 interface DashboardStats {
   totalDebts: number;

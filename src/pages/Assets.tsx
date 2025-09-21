@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Wallet, Plus, Pencil, Trash2, Search, Filter, RefreshCw } from 'lucide-react';
+import { formatIndonesianDate, formatIndonesianDateTime } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 
 interface Asset {
@@ -326,9 +327,9 @@ const Assets = () => {
     'Unit': asset.original_unit || '-',
     'Simbol': asset.symbol || '-',
     'Nilai IDR': asset.value,
-    'Tanggal Beli': asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString('id-ID') : '-',
+    'Tanggal Beli': formatIndonesianDate(asset.purchase_date),
     'Keterangan': asset.description || '-',
-    'Tanggal Dibuat': new Date(asset.created_at).toLocaleDateString('id-ID'),
+    'Tanggal Dibuat': formatIndonesianDate(asset.created_at),
   }));
 
   const getFilteredSupportedAssets = () => {
@@ -505,7 +506,7 @@ const Assets = () => {
                             )}
                             {asset.rate_last_updated && (
                               <div className="text-xs text-muted-foreground">
-                                Update: {new Date(asset.rate_last_updated).toLocaleDateString('id-ID')} {new Date(asset.rate_last_updated).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                Update: {formatIndonesianDateTime(asset.rate_last_updated)}
                               </div>
                             )}
                           </div>
@@ -522,10 +523,7 @@ const Assets = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {asset.purchase_date 
-                          ? new Date(asset.purchase_date).toLocaleDateString('id-ID')
-                          : '-'
-                        }
+                         {formatIndonesianDate(asset.purchase_date)}
                       </TableCell>
                       <TableCell className="max-w-xs truncate">
                         {asset.description || '-'}
