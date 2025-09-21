@@ -391,112 +391,178 @@ const Goals = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
           {goals.map((goal, index) => (
             <Card 
               key={goal.id} 
-              className={`hover:shadow-lg transition-all duration-300 animate-fade-in hover-scale ${
-                goal.status === 'completed' ? 'ring-2 ring-green-200 bg-green-50/50' : ''
+              className={`relative overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-500 animate-fade-in hover:-translate-y-1 bg-gradient-to-br ${
+                goal.status === 'completed' 
+                  ? 'from-green-50 via-emerald-50 to-green-100 ring-2 ring-green-200/50' 
+                  : 'from-white via-blue-50/20 to-slate-50 hover:from-blue-50/30 hover:via-indigo-50/20 hover:to-slate-50'
               }`}
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
+              {/* Decorative top border */}
+              <div className={`h-1 w-full ${
+                goal.status === 'completed' ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-blue-400 to-indigo-500'
+              }`} />
+              
+              {/* Header Section */}
+              <CardHeader className="pb-4 relative">
+                {/* Status Indicator in top right */}
+                <div className="absolute top-4 right-4">
+                  {goal.status === 'completed' && (
+                    <div className="animate-pulse">
+                      <Star className="w-5 h-5 text-yellow-500 fill-current drop-shadow-sm" />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex items-start gap-3 pr-8">
+                  <div className={`p-2 rounded-full ${
+                    goal.status === 'completed' ? 'bg-green-100' : 'bg-blue-100'
+                  }`}>
                     {getMotivationIcon(index)}
-                    <CardTitle className="text-lg leading-tight">
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg font-bold leading-tight text-foreground line-clamp-2 mb-2">
                       {goal.name}
                     </CardTitle>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditDialog(goal)}
-                      className="h-8 w-8 p-0 hover-scale"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 hover-scale text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Hapus Goal?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Aksi ini tidak dapat dibatalkan. Goal "{goal.name}" akan dihapus permanen.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Batal</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteGoal(goal.id)}
-                            className="bg-destructive hover:bg-destructive/90"
-                          >
-                            Hapus
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    {getStatusBadge(goal.status, goal.target_date)}
                   </div>
                 </div>
                 
-                <div className="space-y-2">
-                  {getStatusBadge(goal.status, goal.target_date)}
-                  
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4 mr-1" />
-                    Target: {format(new Date(goal.target_date), 'dd MMMM yyyy', { locale: dateLocale })}
-                  </div>
+                {/* Target Date */}
+                <div className="flex items-center text-sm text-muted-foreground mt-3 bg-muted/20 rounded-lg p-2">
+                  <Calendar className="w-4 h-4 mr-2 text-primary" />
+                  <span className="font-medium">
+                    Target: {format(new Date(goal.target_date), 'dd MMM yyyy', { locale: dateLocale })}
+                  </span>
                 </div>
               </CardHeader>
               
-              <CardContent className="pt-0">
-                <div className="mb-4 p-3 bg-muted/30 rounded-lg">
-                  <div className="flex items-center text-sm font-medium">
-                    <Calendar className="w-4 h-4 mr-2 text-primary" />
+              {/* Content Section */}
+              <CardContent className="pt-0 pb-4">
+                {/* Countdown Display */}
+                <div className={`p-4 rounded-xl mb-4 border ${
+                  (() => {
+                    const today = new Date();
+                    const targetDate = new Date(goal.target_date);
+                    const diffTime = targetDate.getTime() - today.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (goal.status === 'completed') {
+                      return 'bg-green-50 border-green-200 text-green-800';
+                    } else if (diffDays > 7) {
+                      return 'bg-blue-50 border-blue-200 text-blue-800';
+                    } else if (diffDays > 0) {
+                      return 'bg-orange-50 border-orange-200 text-orange-800';
+                    } else {
+                      return 'bg-red-50 border-red-200 text-red-800';
+                    }
+                  })()
+                }`}>
+                  <div className="flex items-center justify-center text-sm font-semibold">
                     {(() => {
+                      if (goal.status === 'completed') {
+                        return (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            Goal Tercapai!
+                          </>
+                        );
+                      }
+                      
                       const today = new Date();
                       const targetDate = new Date(goal.target_date);
                       const diffTime = targetDate.getTime() - today.getTime();
                       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                       
                       if (diffDays > 0) {
-                        return <span className="text-blue-700">Sisa Waktu: {diffDays} Hari</span>;
+                        return (
+                          <>
+                            <Target className="w-4 h-4 mr-2" />
+                            Sisa Waktu: {diffDays} Hari
+                          </>
+                        );
                       } else if (diffDays === 0) {
-                        return <span className="text-orange-600">Hari Ini!</span>;
+                        return (
+                          <>
+                            <Star className="w-4 h-4 mr-2" />
+                            Hari Ini!
+                          </>
+                        );
                       } else {
-                        return <span className="text-red-600">Terlewat {Math.abs(diffDays)} Hari</span>;
+                        return (
+                          <>
+                            <Calendar className="w-4 h-4 mr-2" />
+                            Terlewat {Math.abs(diffDays)} Hari
+                          </>
+                        );
                       }
                     })()}
                   </div>
                 </div>
                 
-                <Button
-                  variant={goal.status === 'completed' ? 'secondary' : 'default'}
-                  size="sm"
-                  onClick={() => toggleGoalStatus(goal.id, goal.status)}
-                  className="w-full btn-hover-scale"
-                >
-                  {goal.status === 'completed' ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                      Selesai
-                    </>
-                  ) : (
-                    <>
-                      <Circle className="w-4 h-4 mr-2" />
-                      Tandai Selesai
-                    </>
-                  )}
-                </Button>
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    variant={goal.status === 'completed' ? 'secondary' : 'default'}
+                    size="sm"
+                    onClick={() => toggleGoalStatus(goal.id, goal.status)}
+                    className="flex-1 btn-hover-scale font-medium"
+                  >
+                    {goal.status === 'completed' ? (
+                      <>
+                        <Circle className="w-4 h-4 mr-2" />
+                        Reset
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                        Selesai
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEditDialog(goal)}
+                    className="px-3 hover:bg-blue-50 btn-hover-scale"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="px-3 hover:bg-red-50 text-destructive hover:text-destructive btn-hover-scale"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Goal?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Aksi ini tidak dapat dibatalkan. Goal "{goal.name}" akan dihapus permanen.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteGoal(goal.id)}
+                          className="bg-destructive hover:bg-destructive/90"
+                        >
+                          Hapus
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </CardContent>
             </Card>
           ))}
