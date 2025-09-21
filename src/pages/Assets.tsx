@@ -4,14 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Combobox } from '@/components/ui/combobox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Wallet, Plus, Pencil, Trash2, Search, Filter, RefreshCw, Settings } from 'lucide-react';
+import { Wallet, Plus, Pencil, Trash2, Search, Filter, RefreshCw } from 'lucide-react';
 import ExportButton from '@/components/ExportButton';
 
 interface Asset {
@@ -336,14 +335,6 @@ const Assets = () => {
     return supportedAssets.filter(asset => asset.asset_type === formData.asset_type);
   };
 
-  const getSymbolOptions = () => {
-    const filtered = getFilteredSupportedAssets();
-    return filtered.map(asset => ({
-      value: asset.symbol,
-      label: `${asset.symbol} - ${asset.name}`
-    }));
-  };
-
   if (loading) {
     return (
       <div className="fade-in">
@@ -424,15 +415,6 @@ const Assets = () => {
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${updatingRates ? 'animate-spin' : ''}`} />
             Update Nilai Tukar
-          </Button>
-          <Button 
-            onClick={() => window.open('/manage-assets', '_blank')}
-            variant="outline"
-            size="sm"
-            className="btn-hover-scale"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Kelola Aset
           </Button>
           <Button onClick={openAddDialog} className="btn-hover-scale">
             <Plus className="w-4 h-4 mr-2" />
@@ -608,29 +590,28 @@ const Assets = () => {
               <>
                 <div className="space-y-2">
                   <Label htmlFor="symbol">Simbol/Aset*</Label>
-                  <Combobox
-                    options={getSymbolOptions()}
-                    value={formData.symbol}
-                    onValueChange={(value) => {
-                      const selected = supportedAssets.find(asset => asset.symbol === value);
-                      setFormData({
-                        ...formData, 
-                        symbol: value,
-                        original_unit: selected?.asset_type === 'crypto' ? value : 
-                                     selected?.asset_type === 'precious_metal' ? 'oz' :
-                                     selected?.asset_type === 'stock' ? 'lembar' :
-                                     selected?.asset_type === 'currency' ? value : ''
-                      });
-                    }}
-                    placeholder="Pilih atau ketik simbol aset"
-                    searchPlaceholder="Cari simbol aset..."
-                    emptyText="Aset tidak ditemukan."
-                    allowCustom={true}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Pilih dari daftar atau ketik simbol baru (BTC, AAPL, dll). Simbol baru akan menggunakan nilai tukar 1:1.
-                  </p>
+                  <Select value={formData.symbol} onValueChange={(value) => {
+                    const selected = supportedAssets.find(asset => asset.symbol === value);
+                    setFormData({
+                      ...formData, 
+                      symbol: value,
+                      original_unit: selected?.asset_type === 'crypto' ? value : 
+                                   selected?.asset_type === 'precious_metal' ? 'oz' :
+                                   selected?.asset_type === 'stock' ? 'lembar' :
+                                   selected?.asset_type === 'currency' ? value : ''
+                    });
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih simbol aset" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getFilteredSupportedAssets().map(asset => (
+                        <SelectItem key={asset.symbol} value={asset.symbol}>
+                          {asset.symbol} - {asset.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
