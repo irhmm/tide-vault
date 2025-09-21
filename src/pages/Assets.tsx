@@ -659,12 +659,25 @@ const Assets = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="original_unit">Unit</Label>
-                    <Input
-                      id="original_unit"
-                      placeholder="BTC, oz, lembar"
-                      value={formData.original_unit}
-                      onChange={(e) => setFormData({...formData, original_unit: e.target.value})}
-                    />
+                    {formData.asset_type === 'precious_metal' ? (
+                      <Select value={formData.original_unit} onValueChange={(value) => setFormData({...formData, original_unit: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih unit" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="gram">Gram</SelectItem>
+                          <SelectItem value="oz">Ounce (oz)</SelectItem>
+                          <SelectItem value="kg">Kilogram</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        id="original_unit"
+                        placeholder="BTC, oz, lembar"
+                        value={formData.original_unit}
+                        onChange={(e) => setFormData({...formData, original_unit: e.target.value})}
+                      />
+                    )}
                   </div>
                 </div>
 
