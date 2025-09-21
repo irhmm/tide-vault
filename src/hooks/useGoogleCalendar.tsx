@@ -100,10 +100,21 @@ export function useGoogleCalendar() {
     setLoading(false);
   };
 
-  const syncReminder = async (action: 'create' | 'update' | 'delete', reminderId: string, reminderData?: any) => {
+  const syncReminder = async (action: 'create' | 'update' | 'delete', reminderId: string, reminderData?: any, billData?: any) => {
     try {
+      const body: any = { action, reminderId, reminderData };
+      
+      // If billData is provided, this is a bill sync operation
+      if (billData) {
+        body.billId = reminderId; // reuse reminderId as billId for bill operations
+        body.billData = billData;
+        body.action = action === 'create' ? 'create_bill' : 
+                     action === 'update' ? 'update_bill' : 
+                     'delete_bill';
+      }
+
       const { data, error } = await supabase.functions.invoke('calendar-sync', {
-        body: { action, reminderId, reminderData }
+        body
       });
 
       if (error) throw error;
@@ -135,6 +146,27 @@ export function useGoogleCalendar() {
     setLoading(false);
   };
 
+  const syncAllBills = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('calendar-sync', {
+        body: { action: 'sync_all_bills' }
+      });
+
+      if (error) throw error;
+
+      const successCount = data.results?.filter((r: any) => r.success).length || 0;
+      toast.success(`Synced ${successCount} bills to Google Calendar`);
+      
+      return data;
+    } catch (error) {
+      console.error('Error syncing all bills:', error);
+      toast.error('Failed to sync bills');
+      throw error;
+    }
+    setLoading(false);
+  };
+
   return {
     isConnected,
     loading,
@@ -143,6 +175,7 @@ export function useGoogleCalendar() {
     handleOAuthCallback,
     syncReminder,
     syncAllReminders,
+    syncAllBills,
     checkConnectionStatus
   };
 }

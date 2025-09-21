@@ -79,6 +79,7 @@ export type Database = {
           created_at: string
           destination_account: string | null
           due_date: string
+          google_calendar_event_id: string | null
           id: string
           is_template: boolean | null
           next_due_date: string | null
@@ -87,6 +88,7 @@ export type Database = {
           recurrence_month: number | null
           recurrence_type: string | null
           status: string
+          sync_to_google_calendar: boolean
           updated_at: string
           user_id: string
         }
@@ -97,6 +99,7 @@ export type Database = {
           created_at?: string
           destination_account?: string | null
           due_date: string
+          google_calendar_event_id?: string | null
           id?: string
           is_template?: boolean | null
           next_due_date?: string | null
@@ -105,6 +108,7 @@ export type Database = {
           recurrence_month?: number | null
           recurrence_type?: string | null
           status?: string
+          sync_to_google_calendar?: boolean
           updated_at?: string
           user_id: string
         }
@@ -115,6 +119,7 @@ export type Database = {
           created_at?: string
           destination_account?: string | null
           due_date?: string
+          google_calendar_event_id?: string | null
           id?: string
           is_template?: boolean | null
           next_due_date?: string | null
@@ -123,6 +128,7 @@ export type Database = {
           recurrence_month?: number | null
           recurrence_type?: string | null
           status?: string
+          sync_to_google_calendar?: boolean
           updated_at?: string
           user_id?: string
         }

@@ -7,10 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { formatIndonesianDate, formatCurrency } from '@/lib/utils';
+import { GoogleCalendarConnection } from '@/components/GoogleCalendarConnection';
+import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import {
   Receipt,
   Plus,
@@ -42,10 +45,13 @@ interface Bill {
   recurrence_month?: number;
   next_due_date?: string;
   is_template: boolean;
+  sync_to_google_calendar?: boolean;
+  google_calendar_event_id?: string;
 }
 
 const Bills = () => {
   const { user } = useAuth();
+  const { isConnected, syncReminder } = useGoogleCalendar();
   const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -69,6 +75,7 @@ const Bills = () => {
     recurrence_day: '',
     recurrence_month: '',
     is_template: false,
+    sync_to_google_calendar: false,
   });
 
   useEffect(() => {
@@ -140,22 +147,63 @@ const Bills = () => {
       };
 
       if (editingBill) {
-        const { error } = await supabase
+        const { data: updatedBill, error } = await supabase
           .from('bills')
           .update(billData)
-          .eq('id', editingBill.id);
+          .eq('id', editingBill.id)
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Sync to Google Calendar if enabled
+        if (formData.sync_to_google_calendar && isConnected) {
+          try {
+            await syncReminder('update', editingBill.id, undefined, updatedBill);
+          } catch (syncError) {
+            console.error('Failed to sync to Google Calendar:', syncError);
+            toast({
+              title: 'Berhasil diperbarui',
+              description: 'Tagihan diperbarui, tapi gagal sync ke Google Calendar',
+              variant: 'destructive',
+            });
+          }
+        } else if (editingBill.google_calendar_event_id && !formData.sync_to_google_calendar) {
+          // Remove from Google Calendar if sync was disabled
+          try {
+            await syncReminder('delete', editingBill.id, undefined, undefined);
+          } catch (syncError) {
+            console.error('Failed to remove from Google Calendar:', syncError);
+          }
+        }
+
         toast({
           title: 'Berhasil',
           description: 'Tagihan berhasil diperbarui',
         });
       } else {
-        const { error } = await supabase
+        const { data: newBill, error } = await supabase
           .from('bills')
-          .insert([billData]);
+          .insert([billData])
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Sync to Google Calendar if enabled
+        if (formData.sync_to_google_calendar && isConnected) {
+          try {
+            await syncReminder('create', newBill.id, undefined, newBill);
+          } catch (syncError) {
+            console.error('Failed to sync to Google Calendar:', syncError);
+            toast({
+              title: 'Berhasil ditambahkan',
+              description: 'Tagihan ditambahkan, tapi gagal sync ke Google Calendar',
+              variant: 'destructive',
+            });
+          }
+        }
+
         toast({
           title: 'Berhasil',
           description: 'Tagihan berhasil ditambahkan',
@@ -180,12 +228,25 @@ const Bills = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus tagihan ini?')) return;
 
     try {
+      // Get bill data before deletion for Google Calendar sync
+      const billToDelete = bills.find(bill => bill.id === id);
+
       const { error } = await supabase
         .from('bills')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
+
+      // Remove from Google Calendar if it was synced
+      if (billToDelete?.google_calendar_event_id && isConnected) {
+        try {
+          await syncReminder('delete', id, undefined, undefined);
+        } catch (syncError) {
+          console.error('Failed to remove from Google Calendar:', syncError);
+        }
+      }
+
       toast({
         title: 'Berhasil',
         description: 'Tagihan berhasil dihapus',
@@ -214,6 +275,7 @@ const Bills = () => {
       recurrence_day: '',
       recurrence_month: '',
       is_template: false,
+      sync_to_google_calendar: false,
     });
   };
 
@@ -323,10 +385,13 @@ const Bills = () => {
     );
   }
 
-  return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Google Calendar Integration */}
+        <GoogleCalendarConnection className="mb-6" />
+        
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
           <Receipt className="h-8 w-8 text-primary" />
           <div>
@@ -538,6 +603,22 @@ const Bills = () => {
                     Jadikan sebagai template untuk auto-generate tagihan masa depan
                   </Label>
                 </div>
+
+                {/* Google Calendar Sync */}
+                {isConnected && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="sync_to_google_calendar"
+                      checked={formData.sync_to_google_calendar}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, sync_to_google_calendar: !!checked })
+                      }
+                    />
+                    <Label htmlFor="sync_to_google_calendar" className="text-sm">
+                      Sync ke Google Calendar
+                    </Label>
+                  </div>
+                )}
               </div>
               
               <div className="flex justify-end gap-2 pt-4">
@@ -723,9 +804,14 @@ const Bills = () => {
                         <TableCell>{bill.payer_name}</TableCell>
                         <TableCell className="font-semibold">{formatCurrency(bill.amount)}</TableCell>
                         <TableCell>
-                          <div className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(dueDateStatus)}`}>
-                            {getStatusIcon(dueDateStatus)}
-                            {formatIndonesianDate(bill.due_date)}
+                          <div className="flex items-center gap-2">
+                            <div className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(dueDateStatus)}`}>
+                              {getStatusIcon(dueDateStatus)}
+                              {formatIndonesianDate(bill.due_date)}
+                            </div>
+                            {bill.google_calendar_event_id && (
+                              <Calendar className="h-4 w-4 text-green-500" />
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -767,6 +853,7 @@ const Bills = () => {
                                   recurrence_day: bill.recurrence_day?.toString() || '',
                                   recurrence_month: bill.recurrence_month?.toString() || '',
                                   is_template: bill.is_template || false,
+                                  sync_to_google_calendar: bill.sync_to_google_calendar || false,
                                 });
                                 setIsDialogOpen(true);
                               }}

@@ -170,7 +170,7 @@ serve(async (req) => {
       });
     }
 
-    const { action, reminderId, reminderData } = await req.json();
+    const { action, reminderId, reminderData, billId, billData } = await req.json();
 
     const accessToken = await getValidAccessToken(supabase, user.id);
 
@@ -226,6 +226,57 @@ serve(async (req) => {
         });
       }
 
+      case 'create_bill': {
+        const billEvent = {
+          title: `Pembayaran ${billData.bill_name}`,
+          description: `${billData.description || ''}\nJumlah: ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(billData.amount)}\nJatuh Tempo: ${billData.due_date}${billData.destination_account ? `\nRekening: ${billData.destination_account}` : ''}`,
+          reminder_date: billData.due_date,
+          reminder_time: '09:00:00',
+        };
+        
+        const calendarEvent = await createCalendarEvent(accessToken, billEvent);
+        
+        await supabase
+          .from('bills')
+          .update({ google_calendar_event_id: calendarEvent.id })
+          .eq('id', billId);
+
+        return new Response(JSON.stringify({ success: true, eventId: calendarEvent.id }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'update_bill': {
+        const billEvent = {
+          title: `Pembayaran ${billData.bill_name}`,
+          description: `${billData.description || ''}\nJumlah: ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(billData.amount)}\nJatuh Tempo: ${billData.due_date}${billData.destination_account ? `\nRekening: ${billData.destination_account}` : ''}`,
+          reminder_date: billData.due_date,
+          reminder_time: '09:00:00',
+        };
+        
+        await updateCalendarEvent(accessToken, billData.google_calendar_event_id, billEvent);
+        
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'delete_bill': {
+        const { data: bill } = await supabase
+          .from('bills')
+          .select('google_calendar_event_id')
+          .eq('id', billId)
+          .single();
+
+        if (bill?.google_calendar_event_id) {
+          await deleteCalendarEvent(accessToken, bill.google_calendar_event_id);
+        }
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       case 'sync_all': {
         // Sync all reminders that have sync_to_google_calendar enabled but no event ID
         const { data: reminders } = await supabase
@@ -249,6 +300,45 @@ serve(async (req) => {
           } catch (error) {
             console.error(`Failed to sync reminder ${reminder.id}:`, error);
             results.push({ id: reminder.id, success: false, error: error.message });
+          }
+        }
+
+        return new Response(JSON.stringify({ success: true, results }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'sync_all_bills': {
+        // Sync all bills that have sync_to_google_calendar enabled but no event ID
+        const { data: bills } = await supabase
+          .from('bills')
+          .select('*')
+          .eq('sync_to_google_calendar', true)
+          .is('google_calendar_event_id', null)
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+
+        const results = [];
+        for (const bill of bills || []) {
+          try {
+            const billEvent = {
+              title: `Pembayaran ${bill.bill_name}`,
+              description: `${bill.description || ''}\nJumlah: ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(bill.amount)}\nJatuh Tempo: ${bill.due_date}${bill.destination_account ? `\nRekening: ${bill.destination_account}` : ''}`,
+              reminder_date: bill.due_date,
+              reminder_time: '09:00:00',
+            };
+
+            const calendarEvent = await createCalendarEvent(accessToken, billEvent);
+            
+            await supabase
+              .from('bills')
+              .update({ google_calendar_event_id: calendarEvent.id })
+              .eq('id', bill.id);
+
+            results.push({ id: bill.id, success: true });
+          } catch (error) {
+            console.error(`Failed to sync bill ${bill.id}:`, error);
+            results.push({ id: bill.id, success: false, error: error.message });
           }
         }
 
