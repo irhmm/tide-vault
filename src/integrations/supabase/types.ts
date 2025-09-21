@@ -27,6 +27,7 @@ export type Database = {
           original_value: number | null
           purchase_date: string | null
           rate_last_updated: string | null
+          storage_location: string | null
           symbol: string | null
           updated_at: string
           user_id: string
@@ -44,6 +45,7 @@ export type Database = {
           original_value?: number | null
           purchase_date?: string | null
           rate_last_updated?: string | null
+          storage_location?: string | null
           symbol?: string | null
           updated_at?: string
           user_id: string
@@ -61,6 +63,7 @@ export type Database = {
           original_value?: number | null
           purchase_date?: string | null
           rate_last_updated?: string | null
+          storage_location?: string | null
           symbol?: string | null
           updated_at?: string
           user_id?: string

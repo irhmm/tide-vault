@@ -21,6 +21,7 @@ interface Asset {
   value: number;
   purchase_date: string | null;
   description: string | null;
+  storage_location?: string | null;
   created_at: string;
   original_value?: number;
   original_unit?: string;
@@ -56,6 +57,7 @@ const Assets = () => {
     value: '',
     purchase_date: '',
     description: '',
+    storage_location: '',
     asset_type: 'physical',
     original_value: '',
     original_unit: '',
@@ -164,6 +166,7 @@ const Assets = () => {
           : (formData.original_value ? parseFloat(formData.original_value) : 0),
         purchase_date: formData.purchase_date || null,
         description: formData.description || null,
+        storage_location: formData.storage_location || null,
         user_id: user?.id,
         asset_type: formData.asset_type,
         original_value: formData.asset_type !== 'physical' ? parseFloat(formData.original_value) : null,
@@ -219,6 +222,7 @@ const Assets = () => {
       value: asset.asset_type === 'physical' ? asset.value.toString() : '',
       purchase_date: asset.purchase_date || '',
       description: asset.description || '',
+      storage_location: asset.storage_location || '',
       asset_type: asset.asset_type || 'physical',
       original_value: asset.original_value?.toString() || '',
       original_unit: asset.original_unit || '',
@@ -263,6 +267,7 @@ const Assets = () => {
       value: '',
       purchase_date: '',
       description: '',
+      storage_location: '',
       asset_type: 'physical',
       original_value: '',
       original_unit: '',
@@ -321,6 +326,7 @@ const Assets = () => {
     'Simbol': asset.symbol || '-',
     'Nilai IDR': asset.value,
     'Tanggal Beli': formatIndonesianDate(asset.purchase_date),
+    'Tempat Simpan': asset.storage_location || '-',
     'Keterangan': asset.description || '-',
     'Tanggal Dibuat': formatIndonesianDate(asset.created_at),
   }));
@@ -458,6 +464,7 @@ const Assets = () => {
                   <TableHead>Nilai Original</TableHead>
                   <TableHead>Nilai IDR</TableHead>
                   <TableHead>Tanggal Beli</TableHead>
+                  <TableHead>Tempat Simpan</TableHead>
                   <TableHead>Keterangan</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
@@ -465,7 +472,7 @@ const Assets = () => {
               <TableBody>
                 {filteredAssets.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       {searchTerm || categoryFilter !== 'all' 
                         ? 'Tidak ada data yang sesuai dengan filter' 
                         : 'Belum ada data aset. Tambah data pertama Anda!'
@@ -516,7 +523,10 @@ const Assets = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                         {formatIndonesianDate(asset.purchase_date)}
+                          {formatIndonesianDate(asset.purchase_date)}
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        {asset.storage_location || '-'}
                       </TableCell>
                       <TableCell className="max-w-xs truncate">
                         {asset.description || '-'}
@@ -686,6 +696,16 @@ const Assets = () => {
                 type="date"
                 value={formData.purchase_date}
                 onChange={(e) => setFormData({...formData, purchase_date: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="storage_location">Tempat Menyimpan</Label>
+              <Input
+                id="storage_location"
+                placeholder="Contoh: Rumah, Bank, Safe Deposit Box, Wallet"
+                value={formData.storage_location}
+                onChange={(e) => setFormData({...formData, storage_location: e.target.value})}
               />
             </div>
 
