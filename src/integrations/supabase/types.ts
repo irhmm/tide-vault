@@ -273,6 +273,9 @@ export type Database = {
         Row: {
           created_at: string
           full_name: string | null
+          google_access_token: string | null
+          google_refresh_token: string | null
+          google_token_expires_at: string | null
           id: string
           updated_at: string
           user_id: string
@@ -280,6 +283,9 @@ export type Database = {
         Insert: {
           created_at?: string
           full_name?: string | null
+          google_access_token?: string | null
+          google_refresh_token?: string | null
+          google_token_expires_at?: string | null
           id?: string
           updated_at?: string
           user_id: string
@@ -287,6 +293,9 @@ export type Database = {
         Update: {
           created_at?: string
           full_name?: string | null
+          google_access_token?: string | null
+          google_refresh_token?: string | null
+          google_token_expires_at?: string | null
           id?: string
           updated_at?: string
           user_id?: string
@@ -297,11 +306,13 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          google_calendar_event_id: string | null
           id: string
           is_active: boolean
           is_completed: boolean
           reminder_date: string
           reminder_time: string
+          sync_to_google_calendar: boolean
           title: string
           updated_at: string
           user_id: string
@@ -309,11 +320,13 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          google_calendar_event_id?: string | null
           id?: string
           is_active?: boolean
           is_completed?: boolean
           reminder_date: string
           reminder_time: string
+          sync_to_google_calendar?: boolean
           title: string
           updated_at?: string
           user_id: string
@@ -321,11 +334,13 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          google_calendar_event_id?: string | null
           id?: string
           is_active?: boolean
           is_completed?: boolean
           reminder_date?: string
           reminder_time?: string
+          sync_to_google_calendar?: boolean
           title?: string
           updated_at?: string
           user_id?: string

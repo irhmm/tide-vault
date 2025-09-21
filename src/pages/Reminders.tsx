@@ -7,11 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatIndonesianDate } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
-import { CalendarIcon, Plus, Edit2, Trash2, Check, X, Bell } from 'lucide-react';
+import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
+import { GoogleCalendarConnection } from '@/components/GoogleCalendarConnection';
+import { CalendarIcon, Plus, Edit2, Trash2, Check, X, Bell, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -24,10 +27,18 @@ interface Reminder {
   is_active: boolean;
   is_completed: boolean;
   created_at: string;
+  sync_to_google_calendar: boolean;
+  google_calendar_event_id: string | null;
 }
 
 const Reminders = () => {
   const { user } = useAuth();
+  const { 
+    isConnected: isGoogleConnected, 
+    handleOAuthCallback, 
+    syncReminder,
+    checkConnectionStatus 
+  } = useGoogleCalendar();
   const { toast } = useToast();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,14 +48,26 @@ const Reminders = () => {
     title: '',
     description: '',
     reminder_date: new Date(),
-    reminder_time: ''
+    reminder_time: '',
+    sync_to_google_calendar: false
   });
 
   useEffect(() => {
     if (user) {
       fetchReminders();
+      checkConnectionStatus();
     }
   }, [user]);
+
+  // Handle Google OAuth callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    
+    if (code) {
+      handleOAuthCallback(code);
+    }
+  }, []);
 
   const fetchReminders = async () => {
     try {
@@ -79,7 +102,10 @@ const Reminders = () => {
         description: formData.description || null,
         reminder_date: format(formData.reminder_date, 'yyyy-MM-dd'),
         reminder_time: formData.reminder_time,
+        sync_to_google_calendar: formData.sync_to_google_calendar,
       };
+
+      let reminderId = editingId;
 
       if (editingId) {
         const { error } = await supabase
@@ -88,17 +114,58 @@ const Reminders = () => {
           .eq('id', editingId);
         
         if (error) throw error;
+
+        // Sync to Google Calendar if enabled and connected
+        if (formData.sync_to_google_calendar && isGoogleConnected) {
+          try {
+            await syncReminder('update', editingId, {
+              title: formData.title,
+              description: formData.description || null,
+              reminder_date: format(formData.reminder_date, 'yyyy-MM-dd'),
+              reminder_time: formData.reminder_time,
+            });
+          } catch (syncError) {
+            console.error('Google Calendar sync failed:', syncError);
+            toast({
+              title: 'Warning',
+              description: 'Reminder updated but Google Calendar sync failed',
+              variant: 'destructive',
+            });
+          }
+        }
         
         toast({
           title: 'Berhasil',
           description: 'Reminder berhasil diperbarui',
         });
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('reminders')
-          .insert([reminderData]);
+          .insert([reminderData])
+          .select()
+          .single();
         
         if (error) throw error;
+        reminderId = data.id;
+
+        // Sync to Google Calendar if enabled and connected
+        if (formData.sync_to_google_calendar && isGoogleConnected) {
+          try {
+            await syncReminder('create', data.id, {
+              title: formData.title,
+              description: formData.description || null,
+              reminder_date: format(formData.reminder_date, 'yyyy-MM-dd'),
+              reminder_time: formData.reminder_time,
+            });
+          } catch (syncError) {
+            console.error('Google Calendar sync failed:', syncError);
+            toast({
+              title: 'Warning',
+              description: 'Reminder created but Google Calendar sync failed',
+              variant: 'destructive',
+            });
+          }
+        }
         
         toast({
           title: 'Berhasil',
@@ -122,7 +189,8 @@ const Reminders = () => {
       title: '',
       description: '',
       reminder_date: new Date(),
-      reminder_time: ''
+      reminder_time: '',
+      sync_to_google_calendar: false
     });
     setShowForm(false);
     setEditingId(null);
@@ -133,7 +201,8 @@ const Reminders = () => {
       title: reminder.title,
       description: reminder.description || '',
       reminder_date: new Date(reminder.reminder_date),
-      reminder_time: reminder.reminder_time
+      reminder_time: reminder.reminder_time,
+      sync_to_google_calendar: reminder.sync_to_google_calendar
     });
     setEditingId(reminder.id);
     setShowForm(true);
@@ -141,6 +210,15 @@ const Reminders = () => {
 
   const handleDelete = async (id: string) => {
     try {
+      // Sync deletion to Google Calendar first
+      if (isGoogleConnected) {
+        try {
+          await syncReminder('delete', id);
+        } catch (syncError) {
+          console.error('Google Calendar delete sync failed:', syncError);
+        }
+      }
+
       const { error } = await supabase
         .from('reminders')
         .delete()
@@ -221,6 +299,8 @@ const Reminders = () => {
         </Button>
       </div>
 
+      <GoogleCalendarConnection className="mb-6" />
+
       {showForm && (
         <Card className="mb-6">
           <CardHeader>
@@ -289,6 +369,19 @@ const Reminders = () => {
                 </div>
               </div>
 
+              {isGoogleConnected && (
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="sync-google-calendar"
+                    checked={formData.sync_to_google_calendar}
+                    onCheckedChange={(checked) => setFormData({ ...formData, sync_to_google_calendar: checked })}
+                  />
+                  <Label htmlFor="sync-google-calendar" className="text-sm">
+                    Sync to Google Calendar
+                  </Label>
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Button type="submit">
                   {editingId ? 'Perbarui' : 'Simpan'}
@@ -326,6 +419,12 @@ const Reminders = () => {
                         )}
                         {!reminder.is_active && (
                           <Badge variant="outline">Nonaktif</Badge>
+                        )}
+                        {reminder.google_calendar_event_id && (
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <ExternalLink className="h-3 w-3" />
+                            Synced
+                          </Badge>
                         )}
                       </div>
                     </div>
