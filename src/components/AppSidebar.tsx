@@ -9,6 +9,7 @@ import {
   TrendingUp, 
   BarChart3, 
   Target,
+  Banknote,
   LogOut
 } from 'lucide-react';
 import {
@@ -56,6 +57,11 @@ const navItems = [
     name: 'Goals & Target', 
     path: '/goals', 
     icon: Target 
+  },
+  { 
+    name: 'Target Finansial', 
+    path: '/financial-targets', 
+    icon: Banknote 
   },
 ];
 

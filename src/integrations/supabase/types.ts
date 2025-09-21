@@ -107,6 +107,39 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_targets: {
+        Row: {
+          created_at: string
+          deadline: string | null
+          estimated_cost: number
+          id: string
+          name: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deadline?: string | null
+          estimated_cost: number
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deadline?: string | null
+          estimated_cost?: number
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       financial_transactions: {
         Row: {
           amount: number
