@@ -68,6 +68,48 @@ export type Database = {
         }
         Relationships: []
       }
+      bills: {
+        Row: {
+          amount: number
+          bill_name: string
+          category: string
+          created_at: string
+          destination_account: string | null
+          due_date: string
+          id: string
+          payer_name: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          bill_name: string
+          category: string
+          created_at?: string
+          destination_account?: string | null
+          due_date: string
+          id?: string
+          payer_name: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          bill_name?: string
+          category?: string
+          created_at?: string
+          destination_account?: string | null
+          due_date?: string
+          id?: string
+          payer_name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       debts: {
         Row: {
           amount: number

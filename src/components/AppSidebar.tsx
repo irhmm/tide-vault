@@ -10,6 +10,7 @@ import {
   BarChart3, 
   Target,
   Banknote,
+  Receipt,
   LogOut
 } from 'lucide-react';
 import {
@@ -62,6 +63,11 @@ const navItems = [
     name: 'Target Finansial', 
     path: '/financial-targets', 
     icon: Banknote 
+  },
+  { 
+    name: 'Catatan Tagihan', 
+    path: '/bills', 
+    icon: Receipt 
   },
 ];
 
