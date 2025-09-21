@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { PiggyBank, Plus, Pencil, Trash2, Search, Filter, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn, formatIndonesianDate } from '@/lib/utils';
+import { cn, formatIndonesianDate, formatCurrency } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 
 interface Saving {
@@ -191,13 +191,6 @@ const Savings = () => {
     setDialogOpen(true);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
 
 
   const filteredSavings = savings.filter(saving => {

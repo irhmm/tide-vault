@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { formatIndonesianDate } from '@/lib/utils';
+import { formatIndonesianDate, formatCurrency } from '@/lib/utils';
 import {
   Receipt,
   Plus,

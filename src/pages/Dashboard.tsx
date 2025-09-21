@@ -11,7 +11,7 @@ import {
   DollarSign,
   Calendar
 } from 'lucide-react';
-import { formatIndonesianDate } from '@/lib/utils';
+import { formatIndonesianDate, formatCurrency } from '@/lib/utils';
 
 interface DashboardStats {
   totalDebts: number;
@@ -109,13 +109,6 @@ const Dashboard = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
 
   if (loading) {
     return (

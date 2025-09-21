@@ -30,3 +30,13 @@ export function formatIndonesianDateTime(dateString: string | Date | null): stri
   
   return `${formattedDate} ${time}`;
 }
+
+export function formatCurrency(amount: number): string {
+  if (amount >= 1000000000) {
+    return `Rp ${(amount / 1000000000).toFixed(1)}M`;
+  } else if (amount >= 1000000) {
+    return `Rp ${(amount / 1000000).toFixed(1)}Jt`;
+  } else {
+    return `Rp ${amount.toLocaleString('id-ID')}`;
+  }
+}

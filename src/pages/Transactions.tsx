@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { TrendingUp, TrendingDown, Plus, Pencil, Trash2, Search, Filter, Calendar } from 'lucide-react';
-import { formatIndonesianDate } from '@/lib/utils';
+import { formatIndonesianDate, formatCurrency } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 
 interface Transaction {
@@ -220,13 +220,6 @@ const Transactions = () => {
     setDialogOpen(true);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const getTypeBadge = (type: string) => {
     return type === 'income' 

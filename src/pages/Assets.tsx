@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Wallet, Plus, Pencil, Trash2, Search, Filter, RefreshCw } from 'lucide-react';
-import { formatIndonesianDate, formatIndonesianDateTime } from '@/lib/utils';
+import { formatIndonesianDate, formatIndonesianDateTime, formatCurrency } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 
 interface Asset {
@@ -302,13 +302,6 @@ const Assets = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const filteredAssets = assets.filter(asset => {
     const matchesSearch = asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

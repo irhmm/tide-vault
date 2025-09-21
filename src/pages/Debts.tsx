@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CreditCard, Plus, Pencil, Trash2, Search, Filter } from 'lucide-react';
-import { formatIndonesianDate } from '@/lib/utils';
+import { formatIndonesianDate, formatCurrency } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 
 interface DebtReceivable {
@@ -195,13 +195,6 @@ const Debts = () => {
     setDialogOpen(true);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
