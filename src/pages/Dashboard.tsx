@@ -146,141 +146,157 @@ const Dashboard = () => {
         </p>
       </div>
 
-      <div className="stats-grid mb-8">
-        {/* Net Worth */}
-        <Card className="summary-card col-span-1 md:col-span-2 group">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <CardHeader className="relative z-10 pb-4">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="icon-container mr-4">
-                  <DollarSign className="w-8 h-8 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-foreground">Total Kekayaan Bersih</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {stats.netWorth >= 0 ? 'Posisi keuangan positif' : 'Perlu perhatian lebih'}
-                  </p>
-                </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Net Worth - Simplified */}
+        <Card className="col-span-1 md:col-span-2 lg:col-span-4 bg-gradient-to-r from-background to-muted/20 border-none shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Total Kekayaan Bersih</p>
+                <p className={`text-3xl font-bold ${stats.netWorth >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {formatCurrency(stats.netWorth)}
+                </p>
               </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="relative z-10 pt-0">
-            <p className={`financial-amount ${stats.netWorth >= 0 ? 'gradient-text-success' : 'gradient-text-destructive'}`}>
-              {formatCurrency(stats.netWorth)}
-            </p>
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-primary" />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         {/* Total Assets */}
-        <Card className="financial-card">
-          <CardHeader className="financial-card-header">
-            <CardTitle className="financial-label">Total Aset</CardTitle>
-            <Wallet className="w-6 h-6 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <p className="financial-amount text-primary">
-              {formatCurrency(stats.totalAssets)}
-            </p>
+        <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-blue-500" />
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Total Aset</p>
+              <p className="text-2xl font-semibold text-blue-500">
+                {formatCurrency(stats.totalAssets)}
+              </p>
+            </div>
           </CardContent>
         </Card>
 
         {/* Total Savings */}
-        <Card className="financial-card">
-          <CardHeader className="financial-card-header">
-            <CardTitle className="financial-label">Total Tabungan</CardTitle>
-            <PiggyBank className="w-6 h-6 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <p className="financial-amount text-primary">
-              {formatCurrency(stats.totalSavings)}
-            </p>
+        <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                <PiggyBank className="w-5 h-5 text-green-500" />
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Total Tabungan</p>
+              <p className="text-2xl font-semibold text-green-500">
+                {formatCurrency(stats.totalSavings)}
+              </p>
+            </div>
           </CardContent>
         </Card>
 
         {/* Total Debts */}
-        <Card className="financial-card">
-          <CardHeader className="financial-card-header">
-            <CardTitle className="financial-label">Total Hutang</CardTitle>
-            <CreditCard className="w-6 h-6 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <p className="financial-amount text-destructive">
-              {formatCurrency(stats.totalDebts)}
-            </p>
+        <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-red-500" />
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Total Hutang</p>
+              <p className="text-2xl font-semibold text-red-500">
+                {formatCurrency(stats.totalDebts)}
+              </p>
+            </div>
           </CardContent>
         </Card>
 
         {/* Total Receivables */}
-        <Card className="financial-card">
-          <CardHeader className="financial-card-header">
-            <CardTitle className="financial-label">Total Piutang</CardTitle>
-            <CreditCard className="w-6 h-6 text-success" />
-          </CardHeader>
-          <CardContent>
-            <p className="financial-amount text-success">
-              {formatCurrency(stats.totalReceivables)}
-            </p>
+        <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-emerald-500" />
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Total Piutang</p>
+              <p className="text-2xl font-semibold text-emerald-500">
+                {formatCurrency(stats.totalReceivables)}
+              </p>
+            </div>
           </CardContent>
         </Card>
 
         {/* Monthly Income */}
-        <Card className="financial-card">
-          <CardHeader className="financial-card-header">
-            <CardTitle className="financial-label">Pemasukan Bulan Ini</CardTitle>
-            <TrendingUp className="w-6 h-6 text-success" />
-          </CardHeader>
-          <CardContent>
-            <p className="financial-amount text-success">
-              {formatCurrency(stats.monthlyIncome)}
-            </p>
+        <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-lg bg-teal-500/10 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-teal-500" />
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Pemasukan Bulan Ini</p>
+              <p className="text-2xl font-semibold text-teal-500">
+                {formatCurrency(stats.monthlyIncome)}
+              </p>
+            </div>
           </CardContent>
         </Card>
 
         {/* Monthly Expenses */}
-        <Card className="financial-card">
-          <CardHeader className="financial-card-header">
-            <CardTitle className="financial-label">Pengeluaran Bulan Ini</CardTitle>
-            <TrendingDown className="w-6 h-6 text-warning" />
-          </CardHeader>
-          <CardContent>
-            <p className="financial-amount text-warning">
-              {formatCurrency(stats.monthlyExpenses)}
-            </p>
+        <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                <TrendingDown className="w-5 h-5 text-orange-500" />
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Pengeluaran Bulan Ini</p>
+              <p className="text-2xl font-semibold text-orange-500">
+                {formatCurrency(stats.monthlyExpenses)}
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="table-container">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Calendar className="w-5 h-5 mr-2 text-primary" />
-              Cashflow Bulan Ini
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+      {/* Quick Insights - Simplified */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border-none shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center mb-4">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mr-3">
+                <Calendar className="w-4 h-4 text-primary" />
+              </div>
+              <h3 className="font-semibold">Cashflow Bulan Ini</h3>
+            </div>
             <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Pemasukan:</span>
-                <span className="font-medium text-success">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Pemasukan</span>
+                <span className="font-medium text-teal-500">
                   {formatCurrency(stats.monthlyIncome)}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Pengeluaran:</span>
-                <span className="font-medium text-warning">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Pengeluaran</span>
+                <span className="font-medium text-orange-500">
                   {formatCurrency(stats.monthlyExpenses)}
                 </span>
               </div>
               <div className="border-t pt-3">
-                <div className="flex justify-between">
-                  <span className="font-medium">Sisa:</span>
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Sisa</span>
                   <span className={`font-bold ${
                     (stats.monthlyIncome - stats.monthlyExpenses) >= 0 
-                      ? 'text-success' 
-                      : 'text-destructive'
+                      ? 'text-teal-500' 
+                      : 'text-red-500'
                   }`}>
                     {formatCurrency(stats.monthlyIncome - stats.monthlyExpenses)}
                   </span>
@@ -290,34 +306,29 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="table-container">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2 text-primary" />
-              Tips Keuangan
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 text-sm">
+        <Card className="border-none shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-center mb-4">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center mr-3">
+                <TrendingUp className="w-4 h-4 text-blue-500" />
+              </div>
+              <h3 className="font-semibold">Tips Keuangan</h3>
+            </div>
+            <div className="space-y-3 text-sm text-muted-foreground">
               {stats.netWorth < 0 && (
-                <p className="text-destructive">
-                  💡 Fokus melunasi hutang untuk meningkatkan kekayaan bersih
-                </p>
+                <p>• Fokus untuk mengurangi hutang dan meningkatkan aset</p>
               )}
               {stats.monthlyExpenses > stats.monthlyIncome && (
-                <p className="text-warning">
-                  ⚠️ Pengeluaran melebihi pemasukan bulan ini
-                </p>
+                <p>• Pengeluaran melebihi pemasukan, perlu dikontrol</p>
               )}
-              {stats.totalSavings < stats.monthlyExpenses * 3 && (
-                <p className="text-primary">
-                  💰 Pertimbangkan menabung untuk dana darurat 3-6 bulan
-                </p>
+              {stats.totalSavings < stats.monthlyIncome * 3 && (
+                <p>• Disarankan memiliki tabungan setara 3-6 bulan pengeluaran</p>
               )}
-              {stats.netWorth >= 0 && stats.monthlyIncome > stats.monthlyExpenses && (
-                <p className="text-success">
-                  ✅ Keuangan Anda dalam kondisi baik!
-                </p>
+              {stats.monthlyIncome > stats.monthlyExpenses && stats.netWorth > 0 && (
+                <p>• Kondisi keuangan baik, pertimbangkan investasi jangka panjang</p>
+              )}
+              {stats.totalSavings >= stats.monthlyIncome * 6 && (
+                <p>• Tabungan sudah cukup, saatnya diversifikasi ke investasi</p>
               )}
             </div>
           </CardContent>
