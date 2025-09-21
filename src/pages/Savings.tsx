@@ -17,7 +17,7 @@ import ExportButton from '@/components/ExportButton';
 interface Saving {
   id: string;
   account_name: string;
-  account_number?: string;
+  bank?: string;
   balance: number;
   account_type: 'savings' | 'checking' | 'investment' | 'other';
   description: string | null;
@@ -36,7 +36,7 @@ const Savings = () => {
   
   const [formData, setFormData] = useState({
     account_name: '',
-    account_number: '',
+    bank: '',
     balance: '',
     account_type: 'savings' as 'savings' | 'checking' | 'investment' | 'other',
     description: '',
@@ -92,7 +92,7 @@ const Savings = () => {
     try {
       const savingData = {
         account_name: formData.account_name,
-        account_number: formData.account_number || null,
+        bank: formData.bank || null,
         balance: parseFloat(formData.balance),
         account_type: formData.account_type,
         description: formData.description || null,
@@ -142,7 +142,7 @@ const Savings = () => {
     setEditingSaving(saving);
     setFormData({
       account_name: saving.account_name,
-      account_number: saving.account_number || '',
+      bank: saving.bank || '',
       balance: saving.balance.toString(),
       account_type: saving.account_type,
       description: saving.description || '',
@@ -182,7 +182,7 @@ const Savings = () => {
   const resetForm = () => {
     setFormData({
       account_name: '',
-      account_number: '',
+      bank: '',
       balance: '',
       account_type: 'savings',
       description: '',
@@ -226,7 +226,7 @@ const Savings = () => {
 
   const exportData = filteredSavings.map(saving => ({
     'Nama Akun': saving.account_name,
-    'Nomor Rekening': saving.account_number || '-',
+    'Bank': saving.bank || '-',
     'Jenis': accountTypes.find(t => t.value === saving.account_type)?.label || saving.account_type,
     'Saldo': saving.balance,
     'Keterangan': saving.description || '-',
@@ -347,7 +347,7 @@ const Savings = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nama Akun</TableHead>
-                  <TableHead>No. Rekening</TableHead>
+                  <TableHead>Bank</TableHead>
                   <TableHead>Jenis</TableHead>
                   <TableHead>Saldo</TableHead>
                   <TableHead>Keterangan</TableHead>
@@ -368,8 +368,8 @@ const Savings = () => {
                   filteredSavings.map((saving) => (
                     <TableRow key={saving.id} className="table-row-hover">
                       <TableCell className="font-medium">{saving.account_name}</TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {saving.account_number || '-'}
+                      <TableCell className="font-medium">
+                        {saving.bank || '-'}
                       </TableCell>
                       <TableCell>{getTypeBadge(saving.account_type)}</TableCell>
                       <TableCell>{formatCurrency(saving.balance)}</TableCell>
@@ -404,12 +404,12 @@ const Savings = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="account_number">Nomor Rekening</Label>
+              <Label htmlFor="bank">Bank</Label>
               <Input
-                id="account_number"
-                placeholder="Contoh: 1234567890, 0123-45-6789"
-                value={formData.account_number}
-                onChange={(e) => setFormData({...formData, account_number: e.target.value})}
+                id="bank"
+                placeholder="Contoh: BCA, Mandiri, BNI, BRI"
+                value={formData.bank}
+                onChange={(e) => setFormData({...formData, bank: e.target.value})}
               />
             </div>
         </CardContent>

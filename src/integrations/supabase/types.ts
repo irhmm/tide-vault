@@ -167,9 +167,9 @@ export type Database = {
       savings: {
         Row: {
           account_name: string
-          account_number: string | null
           account_type: string | null
           balance: number
+          bank: string | null
           created_at: string
           description: string | null
           id: string
@@ -178,9 +178,9 @@ export type Database = {
         }
         Insert: {
           account_name: string
-          account_number?: string | null
           account_type?: string | null
           balance?: number
+          bank?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -189,9 +189,9 @@ export type Database = {
         }
         Update: {
           account_name?: string
-          account_number?: string | null
           account_type?: string | null
           balance?: number
+          bank?: string | null
           created_at?: string
           description?: string | null
           id?: string
