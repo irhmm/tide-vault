@@ -260,63 +260,57 @@ const Transactions = () => {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-white shadow-lg border-0 rounded-xl overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-1">
-              <div className="bg-white rounded-lg p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Total Pemasukan</p>
-                    <p className="text-2xl font-bold text-emerald-600">
-                      {formatCurrency(totalIncome)}
-                    </p>
-                    <p className="text-xs text-gray-500">{currentMonthName}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-emerald-600" />
-                  </div>
+          <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-emerald-500" />
                 </div>
               </div>
-            </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Total Pemasukan</p>
+                <p className="text-2xl font-semibold text-emerald-500">
+                  {formatCurrency(totalIncome)}
+                </p>
+                <p className="text-xs text-muted-foreground">{currentMonthName}</p>
+              </div>
+            </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-lg border-0 rounded-xl overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-1">
-              <div className="bg-white rounded-lg p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Total Pengeluaran</p>
-                    <p className="text-2xl font-bold text-red-600">
-                      {formatCurrency(totalExpense)}
-                    </p>
-                    <p className="text-xs text-gray-500">{currentMonthName}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                    <TrendingDown className="w-6 h-6 text-red-600" />
-                  </div>
+          <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                  <TrendingDown className="w-5 h-5 text-red-500" />
                 </div>
               </div>
-            </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Total Pengeluaran</p>
+                <p className="text-2xl font-semibold text-red-500">
+                  {formatCurrency(totalExpense)}
+                </p>
+                <p className="text-xs text-muted-foreground">{currentMonthName}</p>
+              </div>
+            </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-lg border-0 rounded-xl overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-1">
-              <div className="bg-white rounded-lg p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Saldo Bersih</p>
-                    <p className={`text-2xl font-bold ${
-                      (totalIncome - totalExpense) >= 0 ? 'text-emerald-600' : 'text-red-600'
-                    }`}>
-                      {formatCurrency(totalIncome - totalExpense)}
-                    </p>
-                    <p className="text-xs text-gray-500">{currentMonthName}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Calendar className="w-6 h-6 text-blue-600" />
-                  </div>
+          <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-primary" />
                 </div>
               </div>
-            </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Saldo Bersih</p>
+                <p className={`text-2xl font-semibold ${
+                  (totalIncome - totalExpense) >= 0 ? 'text-emerald-500' : 'text-red-500'
+                }`}>
+                  {formatCurrency(totalIncome - totalExpense)}
+                </p>
+                <p className="text-xs text-muted-foreground">{currentMonthName}</p>
+              </div>
+            </CardContent>
           </Card>
         </div>
 
