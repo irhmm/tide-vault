@@ -1,18 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, Clock, Edit, Trash2, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import ReminderForm from '@/components/ReminderForm';
 import { formatIndonesianDate } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { CalendarIcon, Plus, Edit2, Trash2, Check, X, Bell } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface Reminder {
   id: string;
   title: string;
-  description?: string;
+  description: string | null;
   reminder_date: string;
   reminder_time: string;
   is_active: boolean;
@@ -21,12 +27,18 @@ interface Reminder {
 }
 
 const Reminders = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
-  const { toast } = useToast();
-  const { user } = useAuth();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    reminder_date: new Date(),
+    reminder_time: ''
+  });
 
   useEffect(() => {
     if (user) {
@@ -45,44 +57,86 @@ const Reminders = () => {
       if (error) throw error;
       setReminders(data || []);
     } catch (error) {
-      console.error('Error fetching reminders:', error);
       toast({
-        title: "Error",
-        description: "Failed to fetch reminders",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Gagal memuat data reminder',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleComplete = async (id: string, currentStatus: boolean) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) return;
+
     try {
-      const { error } = await supabase
-        .from('reminders')
-        .update({ is_completed: !currentStatus })
-        .eq('id', id);
+      const reminderData = {
+        user_id: user.id,
+        title: formData.title,
+        description: formData.description || null,
+        reminder_date: format(formData.reminder_date, 'yyyy-MM-dd'),
+        reminder_time: formData.reminder_time,
+      };
 
-      if (error) throw error;
+      if (editingId) {
+        const { error } = await supabase
+          .from('reminders')
+          .update(reminderData)
+          .eq('id', editingId);
+        
+        if (error) throw error;
+        
+        toast({
+          title: 'Berhasil',
+          description: 'Reminder berhasil diperbarui',
+        });
+      } else {
+        const { error } = await supabase
+          .from('reminders')
+          .insert([reminderData]);
+        
+        if (error) throw error;
+        
+        toast({
+          title: 'Berhasil',
+          description: 'Reminder berhasil ditambahkan',
+        });
+      }
 
-      setReminders(reminders.map(reminder => 
-        reminder.id === id 
-          ? { ...reminder, is_completed: !currentStatus }
-          : reminder
-      ));
-
-      toast({
-        title: "Success",
-        description: `Reminder ${!currentStatus ? 'completed' : 'marked as incomplete'}`,
-      });
+      resetForm();
+      fetchReminders();
     } catch (error) {
-      console.error('Error updating reminder:', error);
       toast({
-        title: "Error",
-        description: "Failed to update reminder",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Gagal menyimpan reminder',
+        variant: 'destructive',
       });
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      description: '',
+      reminder_date: new Date(),
+      reminder_time: ''
+    });
+    setShowForm(false);
+    setEditingId(null);
+  };
+
+  const handleEdit = (reminder: Reminder) => {
+    setFormData({
+      title: reminder.title,
+      description: reminder.description || '',
+      reminder_date: new Date(reminder.reminder_date),
+      reminder_time: reminder.reminder_time
+    });
+    setEditingId(reminder.id);
+    setShowForm(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -94,226 +148,228 @@ const Reminders = () => {
 
       if (error) throw error;
 
-      setReminders(reminders.filter(reminder => reminder.id !== id));
       toast({
-        title: "Success",
-        description: "Reminder deleted successfully",
+        title: 'Berhasil',
+        description: 'Reminder berhasil dihapus',
       });
+      fetchReminders();
     } catch (error) {
-      console.error('Error deleting reminder:', error);
       toast({
-        title: "Error",
-        description: "Failed to delete reminder",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Gagal menghapus reminder',
+        variant: 'destructive',
       });
     }
   };
 
-  const handleEdit = (reminder: Reminder) => {
-    setEditingReminder(reminder);
-    setShowForm(true);
+  const toggleComplete = async (id: string, isCompleted: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .update({ is_completed: !isCompleted })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      fetchReminders();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Gagal mengubah status reminder',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleFormSuccess = () => {
-    setShowForm(false);
-    setEditingReminder(null);
-    fetchReminders();
-  };
+  const toggleActive = async (id: string, isActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .update({ is_active: !isActive })
+        .eq('id', id);
 
-  const handleFormCancel = () => {
-    setShowForm(false);
-    setEditingReminder(null);
-  };
+      if (error) throw error;
 
-  const formatTime = (time: string) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+      fetchReminders();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Gagal mengubah status aktif reminder',
+        variant: 'destructive',
+      });
+    }
   };
-
-  const activeReminders = reminders.filter(r => r.is_active && !r.is_completed);
-  const completedReminders = reminders.filter(r => r.is_completed);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Loading reminders...</p>
-        </div>
+      <div className="container mx-auto p-6">
+        <div className="text-center">Loading...</div>
       </div>
-    );
-  }
-
-  if (showForm) {
-    return (
-      <ReminderForm
-        reminder={editingReminder}
-        onSuccess={handleFormSuccess}
-        onCancel={handleFormCancel}
-      />
     );
   }
 
   return (
     <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Custom Reminders</h1>
-          <p className="text-muted-foreground">
-            Manage your personal reminders and events
-          </p>
+          <h1 className="text-3xl font-bold">Reminders</h1>
+          <p className="text-muted-foreground">Kelola reminder pribadi Anda</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="gap-2">
+        <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
-          Add Reminder
+          Tambah Reminder
         </Button>
       </div>
 
-      {activeReminders.length === 0 && completedReminders.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No reminders yet</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Create your first custom reminder to get started
-            </p>
-            <Button onClick={() => setShowForm(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Your First Reminder
-            </Button>
+      {showForm && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>{editingId ? 'Edit Reminder' : 'Tambah Reminder Baru'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="title">Judul</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Masukkan judul reminder"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">Deskripsi</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Masukkan deskripsi (opsional)"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Tanggal</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !formData.reminder_date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.reminder_date ? format(formData.reminder_date, "PPP") : <span>Pilih tanggal</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={formData.reminder_date}
+                        onSelect={(date) => date && setFormData({ ...formData, reminder_date: date })}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <Label htmlFor="time">Waktu</Label>
+                  <Input
+                    id="time"
+                    type="time"
+                    value={formData.reminder_time}
+                    onChange={(e) => setFormData({ ...formData, reminder_time: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button type="submit">
+                  {editingId ? 'Perbarui' : 'Simpan'}
+                </Button>
+                <Button type="button" variant="outline" onClick={resetForm}>
+                  Batal
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
-      ) : (
-        <div className="space-y-6">
-          {/* Active Reminders */}
-          {activeReminders.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">
-                Active Reminders ({activeReminders.length})
-              </h2>
-              <div className="grid gap-4">
-                {activeReminders.map((reminder) => (
-                  <Card key={reminder.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg">{reminder.title}</CardTitle>
-                          {reminder.description && (
-                            <CardDescription className="mt-1">
-                              {reminder.description}
-                            </CardDescription>
-                          )}
-                        </div>
-                        <div className="flex gap-2 ml-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleComplete(reminder.id, reminder.is_completed)}
-                            className="gap-1"
-                          >
-                            <Check className="h-3 w-3" />
-                            Complete
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(reminder)}
-                            className="gap-1"
-                          >
-                            <Edit className="h-3 w-3" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(reminder.id)}
-                            className="gap-1 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="flex gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {formatIndonesianDate(reminder.reminder_date)}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {formatTime(reminder.reminder_time)}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Completed Reminders */}
-          {completedReminders.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">
-                Completed ({completedReminders.length})
-              </h2>
-              <div className="grid gap-4">
-                {completedReminders.map((reminder) => (
-                  <Card key={reminder.id} className="opacity-75">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg line-through">{reminder.title}</CardTitle>
-                          {reminder.description && (
-                            <CardDescription className="mt-1 line-through">
-                              {reminder.description}
-                            </CardDescription>
-                          )}
-                        </div>
-                        <div className="flex gap-2 ml-4">
-                          <Badge variant="secondary">Completed</Badge>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleComplete(reminder.id, reminder.is_completed)}
-                            className="gap-1"
-                          >
-                            Undo
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(reminder.id)}
-                            className="gap-1 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="flex gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {formatIndonesianDate(reminder.reminder_date)}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {formatTime(reminder.reminder_time)}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
       )}
+
+      <div className="grid gap-4">
+        {reminders.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-8">
+              <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">Belum ada reminder yang dibuat</p>
+            </CardContent>
+          </Card>
+        ) : (
+          reminders.map((reminder) => (
+            <Card key={reminder.id} className={`${reminder.is_completed ? 'opacity-60' : ''}`}>
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className={`font-semibold ${reminder.is_completed ? 'line-through' : ''}`}>
+                        {reminder.title}
+                      </h3>
+                      <div className="flex gap-1">
+                        {reminder.is_completed && (
+                          <Badge variant="secondary">Selesai</Badge>
+                        )}
+                        {!reminder.is_active && (
+                          <Badge variant="outline">Nonaktif</Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {reminder.description && (
+                      <p className="text-muted-foreground mb-2">{reminder.description}</p>
+                    )}
+                    
+                    <div className="text-sm text-muted-foreground">
+                      {formatIndonesianDate(reminder.reminder_date)} • {reminder.reminder_time}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant={reminder.is_completed ? "outline" : "default"}
+                      onClick={() => toggleComplete(reminder.id, reminder.is_completed)}
+                    >
+                      {reminder.is_completed ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEdit(reminder)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDelete(reminder.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 };
