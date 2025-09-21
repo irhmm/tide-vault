@@ -663,21 +663,23 @@ const Assets = () => {
                   <div className="space-y-2">
                     <Label htmlFor="original_unit">Unit</Label>
                     {formData.asset_type === 'precious_metal' ? (
-                      <Select value={formData.original_unit} onValueChange={(value) => setFormData({...formData, original_unit: value})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih unit" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="gram">Gram (Harga Antam)</SelectItem>
-                          <SelectItem value="oz">Ounce (Global XAU)</SelectItem>
-                          <SelectItem value="kg">Kilogram (Harga Antam)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {formData.symbol === 'XAU' && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Memilih Gram/Kilogram akan menggunakan harga Antam per gram secara otomatis.
-                        </p>
-                      )}
+                      <>
+                        <Select value={formData.original_unit} onValueChange={(value) => setFormData({...formData, original_unit: value})}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih unit" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gram">Gram (Harga Antam)</SelectItem>
+                            <SelectItem value="oz">Ounce (Global XAU)</SelectItem>
+                            <SelectItem value="kg">Kilogram (Harga Antam)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {formData.symbol === 'XAU' && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Memilih Gram/Kilogram akan menggunakan harga Antam per gram secara otomatis.
+                          </p>
+                        )}
+                      </>
                     ) : (
                       <Input
                         id="original_unit"
