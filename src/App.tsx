@@ -12,6 +12,7 @@ import Debts from "./pages/Debts";
 import Assets from "./pages/Assets";
 import Savings from "./pages/Savings";
 import Transactions from "./pages/Transactions";
+import Goals from "./pages/Goals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="assets" element={<Assets />} />
               <Route path="savings" element={<Savings />} />
               <Route path="transactions" element={<Transactions />} />
+              <Route path="goals" element={<Goals />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

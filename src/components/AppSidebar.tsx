@@ -8,6 +8,7 @@ import {
   PiggyBank, 
   TrendingUp, 
   BarChart3, 
+  Target,
   LogOut
 } from 'lucide-react';
 import {
@@ -50,6 +51,11 @@ const navItems = [
     name: 'Keuangan', 
     path: '/transactions', 
     icon: TrendingUp 
+  },
+  { 
+    name: 'Goals & Target', 
+    path: '/goals', 
+    icon: Target 
   },
 ];
 
