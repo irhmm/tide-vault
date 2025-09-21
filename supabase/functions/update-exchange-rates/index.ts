@@ -33,19 +33,75 @@ serve(async (req) => {
 
     const rates: Record<string, number> = {};
 
+    // Get all unique crypto symbols from supported assets and user assets
+    const { data: userAssets } = await supabaseClient
+      .from('assets')
+      .select('symbol, asset_type')
+      .not('symbol', 'is', null)
+      .neq('asset_type', 'physical');
+
+    const allCryptoSymbols = new Set([
+      ...supportedAssets.filter(asset => asset.asset_type === 'crypto').map(asset => asset.symbol),
+      ...(userAssets || []).filter(asset => asset.asset_type === 'crypto').map(asset => asset.symbol)
+    ]);
+
     // Fetch crypto prices from CoinGecko (free API)
     try {
-      const cryptoAssets = supportedAssets.filter(asset => asset.asset_type === 'crypto');
-      if (cryptoAssets.length > 0) {
-        const cryptoIds = cryptoAssets.map(asset => asset.api_endpoint).join(',');
-        const cryptoResponse = await fetch(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=idr`
-        );
-        const cryptoData = await cryptoResponse.json();
+      if (allCryptoSymbols.size > 0) {
+        // Extended crypto mapping for popular coins
+        const getCoinId = (symbol: string) => {
+          const mapping: Record<string, string> = {
+            'BTC': 'bitcoin',
+            'ETH': 'ethereum', 
+            'USDT': 'tether',
+            'BNB': 'binancecoin',
+            'SOL': 'solana',
+            'USDC': 'usd-coin',
+            'ADA': 'cardano',
+            'AVAX': 'avalanche-2',
+            'DOGE': 'dogecoin',
+            'MATIC': 'matic-network',
+            'DOT': 'polkadot',
+            'LINK': 'chainlink',
+            'UNI': 'uniswap',
+            'LTC': 'litecoin',
+            'TRX': 'tron',
+            'ATOM': 'cosmos',
+            'XRP': 'ripple',
+            'BCH': 'bitcoin-cash',
+            'ALGO': 'algorand',
+            'VET': 'vechain'
+          };
+          
+          // First check if there's a custom api_endpoint in supported_assets
+          const supportedAsset = supportedAssets.find(asset => asset.symbol === symbol && asset.api_endpoint);
+          if (supportedAsset?.api_endpoint) {
+            return supportedAsset.api_endpoint;
+          }
+          
+          return mapping[symbol.toUpperCase()] || symbol.toLowerCase();
+        };
+
+        const coinIds = Array.from(allCryptoSymbols).map(getCoinId).join(',');
         
-        for (const asset of cryptoAssets) {
-          if (cryptoData[asset.api_endpoint]?.idr) {
-            rates[asset.symbol] = cryptoData[asset.api_endpoint].idr;
+        const cryptoResponse = await fetch(
+          `https://api.coingecko.com/api/v3/simple/price?ids=${coinIds}&vs_currencies=idr`
+        );
+        
+        if (cryptoResponse.ok) {
+          const cryptoData = await cryptoResponse.json();
+          console.log('Crypto data received for', Object.keys(cryptoData).length, 'coins');
+          
+          // Map the rates back to symbols
+          for (const symbol of allCryptoSymbols) {
+            const coinId = getCoinId(symbol);
+            if (cryptoData[coinId]?.idr) {
+              rates[symbol] = cryptoData[coinId].idr;
+            } else {
+              console.log(`No rate found for crypto symbol: ${symbol}`);
+              // Set default rate of 1 for unknown symbols so they don't break
+              rates[symbol] = 1;
+            }
           }
         }
       }

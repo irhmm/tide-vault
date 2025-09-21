@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Debts from "./pages/Debts";
 import Assets from "./pages/Assets";
+import ManageAssets from "./pages/ManageAssets";
 import Savings from "./pages/Savings";
 import Transactions from "./pages/Transactions";
 import NotFound from "./pages/NotFound";
@@ -29,6 +30,7 @@ const App = () => (
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="debts" element={<Debts />} />
               <Route path="assets" element={<Assets />} />
+              <Route path="manage-assets" element={<ManageAssets />} />
               <Route path="savings" element={<Savings />} />
               <Route path="transactions" element={<Transactions />} />
             </Route>
