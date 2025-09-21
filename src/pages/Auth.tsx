@@ -156,7 +156,7 @@ const Auth = () => {
                         placeholder="Masukkan nama lengkap"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        className="form-input"
+                        autoComplete="name"
                         required={!isLogin}
                       />
                     </div>
@@ -171,7 +171,7 @@ const Auth = () => {
                     placeholder="nama@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="form-input"
+                    autoComplete="email"
                     required
                   />
                 </div>
@@ -185,7 +185,8 @@ const Auth = () => {
                       placeholder="Masukkan password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="form-input pr-10"
+                      className="pr-10"
+                      autoComplete={isLogin ? "current-password" : "new-password"}
                       required
                     />
                     <button
