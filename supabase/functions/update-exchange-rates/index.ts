@@ -53,24 +53,58 @@ serve(async (req) => {
       console.error('Error fetching crypto rates:', error);
     }
 
-    // Fetch precious metals prices from metals-api.com (free tier)
+    // Fetch precious metals prices from multiple sources
     try {
       const metalAssets = supportedAssets.filter(asset => asset.asset_type === 'precious_metal');
       if (metalAssets.length > 0) {
-        // Note: This is a free API, in production you'd want to use a paid service
-        const metalResponse = await fetch(
-          'https://api.metals.live/v1/spot'
-        );
-        const metalData = await metalResponse.json();
-        
-        // Convert to IDR (approximate rates)
-        const usdToIdr = 15800; // This should come from a currency API
-        
-        if (metalData && metalData.gold) {
-          rates['XAU'] = metalData.gold * usdToIdr; // Gold per ounce in IDR
+        // Get USD to IDR rate first
+        let usdToIdr = 15800; // fallback
+        try {
+          const currencyResponse = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+          const currencyData = await currencyResponse.json();
+          usdToIdr = currencyData.rates.IDR || 15800;
+        } catch (currencyError) {
+          console.log('Using fallback USD to IDR rate');
         }
-        if (metalData && metalData.silver) {
-          rates['XAG'] = metalData.silver * usdToIdr; // Silver per ounce in IDR
+
+        // Try to fetch from CoinGecko for precious metals (more reliable)
+        try {
+          const metalResponse = await fetch(
+            'https://api.coingecko.com/api/v3/simple/price?ids=gold,silver&vs_currencies=usd'
+          );
+          const metalData = await metalResponse.json();
+          
+          if (metalData.gold?.usd) {
+            // Gold price per ounce in USD, convert to IDR per ounce
+            const goldPerOunceIDR = metalData.gold.usd * usdToIdr;
+            rates['XAU'] = goldPerOunceIDR; // Price per ounce
+            rates['XAU_GRAM'] = goldPerOunceIDR / 31.1035; // Price per gram (1 oz = 31.1035 grams)
+            rates['XAU_KG'] = (goldPerOunceIDR / 31.1035) * 1000; // Price per kilogram
+          }
+          
+          if (metalData.silver?.usd) {
+            // Silver price per ounce in USD, convert to IDR per ounce
+            const silverPerOunceIDR = metalData.silver.usd * usdToIdr;
+            rates['XAG'] = silverPerOunceIDR; // Price per ounce
+            rates['XAG_GRAM'] = silverPerOunceIDR / 31.1035; // Price per gram
+            rates['XAG_KG'] = (silverPerOunceIDR / 31.1035) * 1000; // Price per kilogram
+          }
+        } catch (coinGeckoError) {
+          console.error('Error fetching from CoinGecko metals:', coinGeckoError);
+          
+          // Fallback to fixed rates if APIs fail
+          const goldPerOunceUSD = 2000; // Approximate fallback
+          const silverPerOunceUSD = 25; // Approximate fallback
+          
+          rates['XAU'] = goldPerOunceUSD * usdToIdr;
+          rates['XAU_GRAM'] = (goldPerOunceUSD * usdToIdr) / 31.1035;
+          rates['XAU_KG'] = ((goldPerOunceUSD * usdToIdr) / 31.1035) * 1000;
+          
+          rates['XAG'] = silverPerOunceUSD * usdToIdr;
+          rates['XAG_GRAM'] = (silverPerOunceUSD * usdToIdr) / 31.1035;
+          rates['XAG_KG'] = ((silverPerOunceUSD * usdToIdr) / 31.1035) * 1000;
+          
+          console.log('Using fallback precious metal rates');
         }
       }
     } catch (error) {
@@ -106,7 +140,7 @@ serve(async (req) => {
     // Update assets with new exchange rates
     const { data: assets, error: fetchError } = await supabaseClient
       .from('assets')
-      .select('id, symbol, original_value')
+      .select('id, symbol, original_value, original_unit')
       .not('symbol', 'is', null);
 
     if (fetchError) {
@@ -116,17 +150,36 @@ serve(async (req) => {
 
     // Update each asset with new rates
     for (const asset of assets || []) {
-      if (asset.symbol && rates[asset.symbol]) {
-        const { error: updateError } = await supabaseClient
-          .from('assets')
-          .update({
-            exchange_rate: rates[asset.symbol],
-            rate_last_updated: new Date().toISOString()
-          })
-          .eq('id', asset.id);
+      if (asset.symbol) {
+        let rateKey = asset.symbol;
+        
+        // Handle precious metals with specific units
+        if (asset.symbol === 'XAU' && asset.original_unit) {
+          if (asset.original_unit === 'gram') {
+            rateKey = 'XAU_GRAM';
+          } else if (asset.original_unit === 'kg') {
+            rateKey = 'XAU_KG';
+          }
+        } else if (asset.symbol === 'XAG' && asset.original_unit) {
+          if (asset.original_unit === 'gram') {
+            rateKey = 'XAG_GRAM';
+          } else if (asset.original_unit === 'kg') {
+            rateKey = 'XAG_KG';
+          }
+        }
+        
+        if (rates[rateKey]) {
+          const { error: updateError } = await supabaseClient
+            .from('assets')
+            .update({
+              exchange_rate: rates[rateKey],
+              rate_last_updated: new Date().toISOString()
+            })
+            .eq('id', asset.id);
 
-        if (updateError) {
-          console.error(`Error updating asset ${asset.id}:`, updateError);
+          if (updateError) {
+            console.error(`Error updating asset ${asset.id}:`, updateError);
+          }
         }
       }
     }
