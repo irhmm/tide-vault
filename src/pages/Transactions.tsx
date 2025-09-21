@@ -48,17 +48,29 @@ const Transactions = () => {
   }, [user, monthFilter]);
 
   const fetchTransactions = async () => {
+    if (!user) return;
+    
+    setLoading(true);
     try {
       let query = supabase
         .from('financial_transactions')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('tanggal', { ascending: false });
 
       if (monthFilter) {
+        // Create proper date range for the selected month
+        const year = parseInt(monthFilter.split('-')[0]);
+        const month = parseInt(monthFilter.split('-')[1]);
+        
+        // Start of month
+        const startDate = new Date(year, month - 1, 1);
+        // Start of next month (end of current month)
+        const endDate = new Date(year, month, 1);
+        
         query = query
-          .gte('tanggal', `${monthFilter}-01`)
-          .lt('tanggal', `${monthFilter}-32`);
+          .gte('tanggal', startDate.toISOString())
+          .lt('tanggal', endDate.toISOString());
       }
 
       const { data, error } = await query;
