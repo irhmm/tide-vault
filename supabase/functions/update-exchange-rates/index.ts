@@ -170,6 +170,11 @@ serve(async (req) => {
 
     console.log('Fetched rates:', rates);
 
+    // Ensure we log Antam usage when applicable
+    if (rates['XAU_GRAM'] && rates['XAU']) {
+      console.log('Gold rates source likely Antam for gram/kg if gram-based value seems realistic:', rates['XAU_GRAM']);
+    }
+
     // Update assets with new exchange rates
     const { data: assets, error: fetchError } = await supabaseClient
       .from('assets')

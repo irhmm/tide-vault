@@ -516,8 +516,11 @@ const Assets = () => {
                         <div className="space-y-1">
                           <div className="font-medium">{formatCurrency(asset.value)}</div>
                           {asset.asset_type !== 'physical' && asset.original_value && asset.exchange_rate && (
-                            <div className="text-xs text-muted-foreground">
-                              Auto-calculated
+                            <div className="text-xs text-muted-foreground">Auto-calculated</div>
+                          )}
+                          {asset.symbol === 'XAU' && (asset.original_unit === 'gram' || asset.original_unit === 'kg') && (
+                            <div className="text-[10px] inline-flex items-center px-2 py-0.5 rounded bg-primary/10 text-primary">
+                              Harga Antam
                             </div>
                           )}
                         </div>
@@ -625,7 +628,7 @@ const Assets = () => {
                       ...formData, 
                       symbol: value,
                       original_unit: selected?.asset_type === 'crypto' ? value : 
-                                   selected?.asset_type === 'precious_metal' ? 'oz' :
+                                   selected?.asset_type === 'precious_metal' ? 'gram' :
                                    selected?.asset_type === 'stock' ? 'lembar' :
                                    selected?.asset_type === 'currency' ? value : ''
                     });
@@ -665,11 +668,16 @@ const Assets = () => {
                           <SelectValue placeholder="Pilih unit" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="gram">Gram</SelectItem>
-                          <SelectItem value="oz">Ounce (oz)</SelectItem>
-                          <SelectItem value="kg">Kilogram</SelectItem>
+                          <SelectItem value="gram">Gram (Harga Antam)</SelectItem>
+                          <SelectItem value="oz">Ounce (Global XAU)</SelectItem>
+                          <SelectItem value="kg">Kilogram (Harga Antam)</SelectItem>
                         </SelectContent>
                       </Select>
+                      {formData.symbol === 'XAU' && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Memilih Gram/Kilogram akan menggunakan harga Antam per gram secara otomatis.
+                        </p>
+                      )}
                     ) : (
                       <Input
                         id="original_unit"
