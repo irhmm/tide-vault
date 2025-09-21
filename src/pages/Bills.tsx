@@ -23,6 +23,8 @@ import {
   Clock,
   Edit,
   Trash2,
+  Repeat,
+  Copy,
 } from 'lucide-react';
 
 interface Bill {
@@ -35,6 +37,11 @@ interface Bill {
   category: 'my_bills' | 'others_bills_to_me';
   status: 'active' | 'inactive';
   created_at: string;
+  recurrence_type: 'one_time' | 'monthly' | 'yearly' | 'custom';
+  recurrence_day?: number;
+  recurrence_month?: number;
+  next_due_date?: string;
+  is_template: boolean;
 }
 
 const Bills = () => {
@@ -58,6 +65,10 @@ const Bills = () => {
     due_date: '',
     category: 'my_bills' as 'my_bills' | 'others_bills_to_me',
     status: 'active' as 'active' | 'inactive',
+    recurrence_type: 'one_time' as 'one_time' | 'monthly' | 'yearly' | 'custom',
+    recurrence_day: '',
+    recurrence_month: '',
+    is_template: false,
   });
 
   useEffect(() => {
@@ -90,14 +101,41 @@ const Bills = () => {
     }
   };
 
+  const calculateNextDueDate = (dueDate: string, recurrenceType: string, recurrenceDay?: number, recurrenceMonth?: number): string | null => {
+    if (recurrenceType === 'one_time') return null;
+    
+    const current = new Date(dueDate);
+    if (recurrenceType === 'monthly' && recurrenceDay) {
+      const nextMonth = new Date(current.getFullYear(), current.getMonth() + 1, recurrenceDay);
+      return nextMonth.toISOString().split('T')[0];
+    } else if (recurrenceType === 'yearly' && recurrenceDay && recurrenceMonth) {
+      const nextYear = new Date(current.getFullYear() + 1, recurrenceMonth - 1, recurrenceDay);
+      return nextYear.toISOString().split('T')[0];
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
     try {
+      const recurrenceDay = formData.recurrence_day ? parseInt(formData.recurrence_day) : null;
+      const recurrenceMonth = formData.recurrence_month ? parseInt(formData.recurrence_month) : null;
+      
       const billData = {
-        ...formData,
+        bill_name: formData.bill_name,
+        payer_name: formData.payer_name,
+        destination_account: formData.destination_account,
         amount: parseFloat(formData.amount),
+        due_date: formData.due_date,
+        category: formData.category,
+        status: formData.status,
+        recurrence_type: formData.recurrence_type,
+        recurrence_day: recurrenceDay,
+        recurrence_month: recurrenceMonth,
+        next_due_date: calculateNextDueDate(formData.due_date, formData.recurrence_type, recurrenceDay || undefined, recurrenceMonth || undefined),
+        is_template: formData.is_template,
         user_id: user.id,
       };
 
@@ -172,6 +210,10 @@ const Bills = () => {
       due_date: '',
       category: 'my_bills',
       status: 'active',
+      recurrence_type: 'one_time',
+      recurrence_day: '',
+      recurrence_month: '',
+      is_template: false,
     });
   };
 
@@ -400,6 +442,103 @@ const Bills = () => {
                   </Select>
                 </div>
               </div>
+
+              {/* Recurring Settings */}
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex items-center gap-2">
+                  <Repeat className="h-4 w-4 text-primary" />
+                  <Label className="text-sm font-medium">Pengaturan Berulang</Label>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="recurrence_type">Jenis Pengulangan</Label>
+                  <Select
+                    value={formData.recurrence_type}
+                    onValueChange={(value: 'one_time' | 'monthly' | 'yearly' | 'custom') => 
+                      setFormData({ ...formData, recurrence_type: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="one_time">Sekali Bayar</SelectItem>
+                      <SelectItem value="monthly">Setiap Bulan</SelectItem>
+                      <SelectItem value="yearly">Setiap Tahun</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.recurrence_type === 'monthly' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="recurrence_day">Tanggal dalam Bulan</Label>
+                    <Input
+                      id="recurrence_day"
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={formData.recurrence_day}
+                      onChange={(e) => setFormData({ ...formData, recurrence_day: e.target.value })}
+                      placeholder="Contoh: 15 (tanggal 15 setiap bulan)"
+                    />
+                  </div>
+                )}
+
+                {formData.recurrence_type === 'yearly' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="recurrence_day">Tanggal</Label>
+                      <Input
+                        id="recurrence_day"
+                        type="number"
+                        min="1"
+                        max="31"
+                        value={formData.recurrence_day}
+                        onChange={(e) => setFormData({ ...formData, recurrence_day: e.target.value })}
+                        placeholder="Tanggal"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="recurrence_month">Bulan</Label>
+                      <Select
+                        value={formData.recurrence_month}
+                        onValueChange={(value) => setFormData({ ...formData, recurrence_month: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih bulan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">Januari</SelectItem>
+                          <SelectItem value="2">Februari</SelectItem>
+                          <SelectItem value="3">Maret</SelectItem>
+                          <SelectItem value="4">April</SelectItem>
+                          <SelectItem value="5">Mei</SelectItem>
+                          <SelectItem value="6">Juni</SelectItem>
+                          <SelectItem value="7">Juli</SelectItem>
+                          <SelectItem value="8">Agustus</SelectItem>
+                          <SelectItem value="9">September</SelectItem>
+                          <SelectItem value="10">Oktober</SelectItem>
+                          <SelectItem value="11">November</SelectItem>
+                          <SelectItem value="12">Desember</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="is_template"
+                    checked={formData.is_template}
+                    onChange={(e) => setFormData({ ...formData, is_template: e.target.checked })}
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor="is_template" className="text-sm">
+                    Jadikan sebagai template untuk auto-generate tagihan masa depan
+                  </Label>
+                </div>
+              </div>
               
               <div className="flex justify-end gap-2 pt-4">
                 <Button
@@ -554,9 +693,9 @@ const Bills = () => {
                   <TableRow>
                     <TableHead>Nama Tagihan</TableHead>
                     <TableHead>Pembayar</TableHead>
-                    <TableHead>Rekening Tujuan</TableHead>
                     <TableHead>Nominal</TableHead>
                     <TableHead>Jatuh Tempo</TableHead>
+                    <TableHead>Pengulangan</TableHead>
                     <TableHead>Kategori</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Aksi</TableHead>
@@ -570,14 +709,33 @@ const Bills = () => {
                         key={bill.id} 
                         className="hover:bg-muted/50 transition-colors"
                       >
-                        <TableCell className="font-medium">{bill.bill_name}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {bill.bill_name}
+                            {bill.is_template && (
+                              <Badge variant="outline" className="text-xs">
+                                <Copy className="h-3 w-3 mr-1" />
+                                Template
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{bill.payer_name}</TableCell>
-                        <TableCell>{bill.destination_account || '-'}</TableCell>
                         <TableCell className="font-semibold">{formatCurrency(bill.amount)}</TableCell>
                         <TableCell>
                           <div className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(dueDateStatus)}`}>
                             {getStatusIcon(dueDateStatus)}
                             {formatIndonesianDate(bill.due_date)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            {bill.recurrence_type !== 'one_time' && <Repeat className="h-3 w-3 text-muted-foreground" />}
+                            <span className="text-sm">
+                              {bill.recurrence_type === 'one_time' ? 'Sekali' : 
+                               bill.recurrence_type === 'monthly' ? `Bulanan (tgl ${bill.recurrence_day})` :
+                               bill.recurrence_type === 'yearly' ? `Tahunan (${bill.recurrence_day}/${bill.recurrence_month})` : 'Custom'}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -605,6 +763,10 @@ const Bills = () => {
                                   due_date: bill.due_date,
                                   category: bill.category,
                                   status: bill.status,
+                                  recurrence_type: bill.recurrence_type || 'one_time',
+                                  recurrence_day: bill.recurrence_day?.toString() || '',
+                                  recurrence_month: bill.recurrence_month?.toString() || '',
+                                  is_template: bill.is_template || false,
                                 });
                                 setIsDialogOpen(true);
                               }}

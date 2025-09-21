@@ -77,7 +77,12 @@ export type Database = {
           destination_account: string | null
           due_date: string
           id: string
+          is_template: boolean | null
+          next_due_date: string | null
           payer_name: string
+          recurrence_day: number | null
+          recurrence_month: number | null
+          recurrence_type: string | null
           status: string
           updated_at: string
           user_id: string
@@ -90,7 +95,12 @@ export type Database = {
           destination_account?: string | null
           due_date: string
           id?: string
+          is_template?: boolean | null
+          next_due_date?: string | null
           payer_name: string
+          recurrence_day?: number | null
+          recurrence_month?: number | null
+          recurrence_type?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -103,7 +113,12 @@ export type Database = {
           destination_account?: string | null
           due_date?: string
           id?: string
+          is_template?: boolean | null
+          next_due_date?: string | null
           payer_name?: string
+          recurrence_day?: number | null
+          recurrence_month?: number | null
+          recurrence_type?: string | null
           status?: string
           updated_at?: string
           user_id?: string
