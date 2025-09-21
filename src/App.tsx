@@ -15,6 +15,7 @@ import Transactions from "./pages/Transactions";
 import Goals from "./pages/Goals";
 import FinancialTargets from "./pages/FinancialTargets";
 import Bills from "./pages/Bills";
+import Reminders from "./pages/Reminders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="goals" element={<Goals />} />
               <Route path="financial-targets" element={<FinancialTargets />} />
               <Route path="bills" element={<Bills />} />
+              <Route path="reminders" element={<Reminders />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -11,6 +11,7 @@ import {
   Target,
   Banknote,
   Receipt,
+  Bell,
   LogOut
 } from 'lucide-react';
 import {
@@ -68,6 +69,11 @@ const navItems = [
     name: 'Catatan Tagihan', 
     path: '/bills', 
     icon: Receipt 
+  },
+  { 
+    name: 'Custom Reminders', 
+    path: '/reminders', 
+    icon: Bell 
   },
 ];
 
