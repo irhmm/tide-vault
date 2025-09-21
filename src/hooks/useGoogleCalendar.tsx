@@ -30,7 +30,22 @@ export function useGoogleCalendar() {
   const connectGoogleCalendar = async () => {
     setLoading(true);
     try {
-      const clientId = 'YOUR_GOOGLE_CLIENT_ID'; // This will be replaced with actual client ID
+      // Get the client ID from the edge function
+      const { data: configData, error: configError } = await supabase.functions.invoke('google-auth', {
+        method: 'GET',
+        headers: { 'x-action': 'get-client-id' }
+      });
+
+      if (configError) {
+        console.error('Error getting Google Client ID:', configError);
+        throw new Error('Failed to get Google Client ID');
+      }
+
+      const clientId = configData.clientId;
+      if (!clientId) {
+        throw new Error('Google Client ID not configured');
+      }
+
       const redirectUri = `${window.location.origin}/reminders`;
       const scope = 'https://www.googleapis.com/auth/calendar';
       
@@ -42,14 +57,16 @@ export function useGoogleCalendar() {
         `access_type=offline&` +
         `prompt=consent`;
 
+      console.log('Redirecting to Google OAuth with:', { clientId, redirectUri });
+
       // Store current state and redirect to Google OAuth
       localStorage.setItem('google_oauth_redirect', redirectUri);
       window.location.href = authUrl;
     } catch (error) {
       console.error('Error initiating Google Calendar connection:', error);
-      toast.error('Failed to connect Google Calendar');
+      toast.error('Failed to connect Google Calendar: ' + (error as Error).message);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleOAuthCallback = async (code: string) => {

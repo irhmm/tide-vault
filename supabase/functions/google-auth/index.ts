@@ -33,6 +33,24 @@ serve(async (req) => {
 
     if (req.method === 'POST') {
       const { code, redirectUri } = await req.json();
+      
+      console.log('Starting OAuth token exchange:', { redirectUri, hasCode: !!code });
+
+      if (!code) {
+        console.error('No authorization code provided');
+        return new Response(JSON.stringify({ error: 'Authorization code is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (!googleClientId || !googleClientSecret) {
+        console.error('Google OAuth credentials not configured');
+        return new Response(JSON.stringify({ error: 'Google OAuth not configured' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
       // Exchange authorization code for tokens
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -52,8 +70,17 @@ serve(async (req) => {
       const tokenData = await tokenResponse.json();
 
       if (!tokenResponse.ok) {
-        console.error('Token exchange failed:', tokenData);
-        return new Response(JSON.stringify({ error: 'Token exchange failed' }), {
+        console.error('Token exchange failed:', {
+          status: tokenResponse.status,
+          statusText: tokenResponse.statusText,
+          error: tokenData,
+          clientId: googleClientId,
+          redirectUri
+        });
+        return new Response(JSON.stringify({ 
+          error: 'Token exchange failed', 
+          details: tokenData.error_description || tokenData.error || 'Unknown error'
+        }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -109,6 +136,17 @@ serve(async (req) => {
       });
     }
 
+    // Handle special header for getting client ID
+    const action = req.headers.get('x-action');
+    if (action === 'get-client-id') {
+      console.log('Providing Google Client ID for OAuth setup');
+      return new Response(JSON.stringify({ 
+        clientId: googleClientId 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // GET request - check connection status
     const { data: profile } = await supabase
       .from('profiles')
@@ -119,6 +157,8 @@ serve(async (req) => {
     const isConnected = !!(profile?.google_access_token);
     const tokenExpired = profile?.google_token_expires_at ? 
       new Date(profile.google_token_expires_at) < new Date() : false;
+
+    console.log('Connection status check:', { isConnected, tokenExpired });
 
     return new Response(JSON.stringify({ 
       isConnected: isConnected && !tokenExpired 
