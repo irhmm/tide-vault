@@ -297,11 +297,20 @@ const FinancialTargets = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
+    if (amount >= 1000000000) {
+      const billions = amount / 1000000000;
+      return `Rp ${billions % 1 === 0 ? billions.toFixed(0) : billions.toFixed(1)} M`;
+    } else if (amount >= 1000000) {
+      const millions = amount / 1000000;
+      return `Rp ${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1)} Jt`;
+    } else {
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(amount);
+    }
   };
 
   const getTotalTargetsCost = () => {
