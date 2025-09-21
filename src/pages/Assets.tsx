@@ -358,20 +358,48 @@ const Assets = () => {
       </div>
 
       {/* Summary Card */}
-      <Card className="financial-card mb-6">
-        <CardHeader className="financial-card-header">
-          <CardTitle className="flex items-center">
-            <Wallet className="w-6 h-6 mr-2 text-primary" />
-            Total Nilai Aset
+      <Card className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-card to-accent/5 border-2 border-primary/10 rounded-2xl shadow-glow hover:shadow-strong transition-all duration-300 mb-6 group">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <CardHeader className="relative z-10 pb-4">
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="p-3 rounded-xl bg-primary/10 mr-4 group-hover:bg-primary/15 transition-colors duration-300">
+                <Wallet className="w-7 h-7 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground">Total Nilai Aset</h3>
+                <p className="text-sm text-muted-foreground">Portfolio keseluruhan</p>
+              </div>
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="financial-amount text-primary">
-            {formatCurrency(totalValue)}
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            {filteredAssets.length} aset terdaftar
-          </p>
+        <CardContent className="relative z-10 pt-0">
+          <div className="space-y-4">
+            <div className="flex items-baseline justify-between">
+              <p className="text-4xl font-black bg-gradient-to-r from-primary via-primary-hover to-primary bg-clip-text text-transparent">
+                {formatCurrency(totalValue)}
+              </p>
+              <div className="flex items-center space-x-2 text-success">
+                <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium">Live</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between pt-4 border-t border-border/50">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-primary/20 rounded-full"></div>
+                <span className="text-sm font-medium text-muted-foreground">
+                  {filteredAssets.length} aset terdaftar
+                </span>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Terakhir diperbarui</p>
+                <p className="text-xs font-medium text-foreground">
+                  {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
