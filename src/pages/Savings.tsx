@@ -199,6 +199,22 @@ const Savings = () => {
     }).format(amount);
   };
 
+  const formatIndonesianDate = (dateString: string | null) => {
+    if (!dateString) return '-';
+    
+    const date = new Date(dateString);
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    
+    return `${day} ${month} ${year}`;
+  };
+
   const getTypeBadge = (date: string | null) => {
     if (!date) return <Badge variant="outline">Tanpa Tanggal</Badge>;
     
@@ -222,10 +238,10 @@ const Savings = () => {
   const exportData = filteredSavings.map(saving => ({
     'Nama Akun': saving.account_name,
     'Bank': saving.bank || '-',
-    'Tanggal Menabung': saving.saving_date ? new Date(saving.saving_date).toLocaleDateString('id-ID') : '-',
+    'Tanggal Menabung': formatIndonesianDate(saving.saving_date),
     'Saldo': saving.balance,
     'Keterangan': saving.description || '-',
-    'Tanggal Dibuat': new Date(saving.created_at).toLocaleDateString('id-ID'),
+    'Tanggal Dibuat': formatIndonesianDate(saving.created_at),
   }));
 
   if (loading) {
@@ -354,7 +370,18 @@ const Savings = () => {
                       <TableCell className="font-medium">
                         {saving.bank || '-'}
                       </TableCell>
-                      <TableCell>{getTypeBadge(saving.saving_date || null)}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">
+                            {formatIndonesianDate(saving.saving_date)}
+                          </div>
+                          {saving.saving_date && (
+                            <div className="text-xs">
+                              {getTypeBadge(saving.saving_date)}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{formatCurrency(saving.balance)}</TableCell>
                       <TableCell className="max-w-xs truncate">
                         {saving.description || '-'}
