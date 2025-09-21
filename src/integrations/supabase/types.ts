@@ -167,34 +167,34 @@ export type Database = {
       savings: {
         Row: {
           account_name: string
-          account_type: string | null
           balance: number
           bank: string | null
           created_at: string
           description: string | null
           id: string
+          saving_date: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           account_name: string
-          account_type?: string | null
           balance?: number
           bank?: string | null
           created_at?: string
           description?: string | null
           id?: string
+          saving_date?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           account_name?: string
-          account_type?: string | null
           balance?: number
           bank?: string | null
           created_at?: string
           description?: string | null
           id?: string
+          saving_date?: string | null
           updated_at?: string
           user_id?: string
         }

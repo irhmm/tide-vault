@@ -3,15 +3,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { PiggyBank, Plus, Pencil, Trash2, Search, Filter } from 'lucide-react';
+import { PiggyBank, Plus, Pencil, Trash2, Search, Filter, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import ExportButton from '@/components/ExportButton';
 
 interface Saving {
@@ -19,7 +22,7 @@ interface Saving {
   account_name: string;
   bank?: string;
   balance: number;
-  account_type: 'savings' | 'checking' | 'investment' | 'other';
+  saving_date?: string;
   description: string | null;
   created_at: string;
 }
@@ -32,22 +35,15 @@ const Savings = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSaving, setEditingSaving] = useState<Saving | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
   
   const [formData, setFormData] = useState({
     account_name: '',
     bank: '',
     balance: '',
-    account_type: 'savings' as 'savings' | 'checking' | 'investment' | 'other',
+    saving_date: null as Date | null,
     description: '',
   });
 
-  const accountTypes = [
-    { value: 'savings', label: 'Tabungan' },
-    { value: 'checking', label: 'Giro' },
-    { value: 'investment', label: 'Investasi' },
-    { value: 'other', label: 'Lainnya' }
-  ];
 
   useEffect(() => {
     if (user) {
@@ -94,7 +90,7 @@ const Savings = () => {
         account_name: formData.account_name,
         bank: formData.bank || null,
         balance: parseFloat(formData.balance),
-        account_type: formData.account_type,
+        saving_date: formData.saving_date ? format(formData.saving_date, 'yyyy-MM-dd') : null,
         description: formData.description || null,
         user_id: user?.id,
       };
@@ -144,7 +140,7 @@ const Savings = () => {
       account_name: saving.account_name,
       bank: saving.bank || '',
       balance: saving.balance.toString(),
-      account_type: saving.account_type,
+      saving_date: saving.saving_date ? new Date(saving.saving_date) : null,
       description: saving.description || '',
     });
     setDialogOpen(true);
@@ -184,7 +180,7 @@ const Savings = () => {
       account_name: '',
       bank: '',
       balance: '',
-      account_type: 'savings',
+      saving_date: null,
       description: '',
     });
   };
@@ -203,23 +199,22 @@ const Savings = () => {
     }).format(amount);
   };
 
-  const getTypeBadge = (type: string) => {
-    const typeMap = {
-      savings: { label: 'Tabungan', variant: 'default' as const },
-      checking: { label: 'Giro', variant: 'secondary' as const },
-      investment: { label: 'Investasi', variant: 'outline' as const },
-      other: { label: 'Lainnya', variant: 'outline' as const }
-    };
+  const getTypeBadge = (date: string | null) => {
+    if (!date) return <Badge variant="outline">Tanpa Tanggal</Badge>;
     
-    const typeInfo = typeMap[type as keyof typeof typeMap] || typeMap.other;
-    return <Badge variant={typeInfo.variant}>{typeInfo.label}</Badge>;
+    const savingDate = new Date(date);
+    const now = new Date();
+    const daysDiff = Math.floor((now.getTime() - savingDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysDiff < 30) return <Badge className="bg-success text-success-foreground">Baru</Badge>;
+    if (daysDiff < 365) return <Badge variant="secondary">Sedang</Badge>;
+    return <Badge variant="outline">Lama</Badge>;
   };
 
   const filteredSavings = savings.filter(saving => {
     const matchesSearch = saving.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          saving.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || saving.account_type === typeFilter;
-    return matchesSearch && matchesType;
+    return matchesSearch;
   });
 
   const totalBalance = filteredSavings.reduce((sum, saving) => sum + saving.balance, 0);
@@ -227,7 +222,7 @@ const Savings = () => {
   const exportData = filteredSavings.map(saving => ({
     'Nama Akun': saving.account_name,
     'Bank': saving.bank || '-',
-    'Jenis': accountTypes.find(t => t.value === saving.account_type)?.label || saving.account_type,
+    'Tanggal Menabung': saving.saving_date ? new Date(saving.saving_date).toLocaleDateString('id-ID') : '-',
     'Saldo': saving.balance,
     'Keterangan': saving.description || '-',
     'Tanggal Dibuat': new Date(saving.created_at).toLocaleDateString('id-ID'),
@@ -313,18 +308,6 @@ const Savings = () => {
               className="pl-10"
             />
           </div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-40">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Jenis</SelectItem>
-              {accountTypes.map(type => (
-                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
         <div className="flex gap-2">
           <ExportButton 
@@ -348,7 +331,7 @@ const Savings = () => {
                 <TableRow>
                   <TableHead>Nama Akun</TableHead>
                   <TableHead>Bank</TableHead>
-                  <TableHead>Jenis</TableHead>
+                  <TableHead>Tanggal Menabung</TableHead>
                   <TableHead>Saldo</TableHead>
                   <TableHead>Keterangan</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
@@ -358,7 +341,7 @@ const Savings = () => {
                 {filteredSavings.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      {searchTerm || typeFilter !== 'all' 
+                      {searchTerm 
                         ? 'Tidak ada data yang sesuai dengan filter' 
                         : 'Belum ada data tabungan. Tambah data pertama Anda!'
                       }
@@ -371,7 +354,7 @@ const Savings = () => {
                       <TableCell className="font-medium">
                         {saving.bank || '-'}
                       </TableCell>
-                      <TableCell>{getTypeBadge(saving.account_type)}</TableCell>
+                      <TableCell>{getTypeBadge(saving.saving_date || null)}</TableCell>
                       <TableCell>{formatCurrency(saving.balance)}</TableCell>
                       <TableCell className="max-w-xs truncate">
                         {saving.description || '-'}
@@ -443,17 +426,30 @@ const Savings = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="account_type">Jenis Akun</Label>
-              <Select value={formData.account_type} onValueChange={(value: any) => setFormData({...formData, account_type: value})}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {accountTypes.map(type => (
-                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="saving_date">Tanggal Menabung</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.saving_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.saving_date ? format(formData.saving_date, "dd/MM/yyyy") : "Pilih tanggal"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.saving_date || undefined}
+                    onSelect={(date) => setFormData({...formData, saving_date: date || null})}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
