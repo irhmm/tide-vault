@@ -111,13 +111,6 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t border-sidebar-border">
         <div className="p-4">
-          {!collapsed && (
-            <div className="mb-2">
-              <p className="text-xs text-sidebar-foreground/60 truncate">
-                {user?.email}
-              </p>
-            </div>
-          )}
           <Button
             variant="ghost"
             size="sm"
