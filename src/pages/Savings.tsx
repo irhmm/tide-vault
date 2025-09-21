@@ -199,17 +199,6 @@ const Savings = () => {
     }).format(amount);
   };
 
-  const getTypeBadge = (date: string | null) => {
-    if (!date) return <Badge variant="outline">Tanpa Tanggal</Badge>;
-    
-    const savingDate = new Date(date);
-    const now = new Date();
-    const daysDiff = Math.floor((now.getTime() - savingDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysDiff < 30) return <Badge className="bg-success text-success-foreground">Baru</Badge>;
-    if (daysDiff < 365) return <Badge variant="secondary">Sedang</Badge>;
-    return <Badge variant="outline">Lama</Badge>;
-  };
 
   const filteredSavings = savings.filter(saving => {
     const matchesSearch = saving.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -355,16 +344,7 @@ const Savings = () => {
                         {saving.bank || '-'}
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">
-                            {formatIndonesianDate(saving.saving_date)}
-                          </div>
-                          {saving.saving_date && (
-                            <div className="text-xs">
-                              {getTypeBadge(saving.saving_date)}
-                            </div>
-                          )}
-                        </div>
+                        {formatIndonesianDate(saving.saving_date)}
                       </TableCell>
                       <TableCell>{formatCurrency(saving.balance)}</TableCell>
                       <TableCell className="max-w-xs truncate">
