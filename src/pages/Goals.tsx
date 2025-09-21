@@ -459,11 +459,25 @@ const Goals = () => {
               </CardHeader>
               
               <CardContent className="pt-0">
-                {goal.description && (
-                  <CardDescription className="mb-4 text-sm">
-                    {goal.description}
-                  </CardDescription>
-                )}
+                <div className="mb-4 p-3 bg-muted/30 rounded-lg">
+                  <div className="flex items-center text-sm font-medium">
+                    <Calendar className="w-4 h-4 mr-2 text-primary" />
+                    {(() => {
+                      const today = new Date();
+                      const targetDate = new Date(goal.target_date);
+                      const diffTime = targetDate.getTime() - today.getTime();
+                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                      
+                      if (diffDays > 0) {
+                        return <span className="text-blue-700">Sisa Waktu: {diffDays} Hari</span>;
+                      } else if (diffDays === 0) {
+                        return <span className="text-orange-600">Hari Ini!</span>;
+                      } else {
+                        return <span className="text-red-600">Terlewat {Math.abs(diffDays)} Hari</span>;
+                      }
+                    })()}
+                  </div>
+                </div>
                 
                 <Button
                   variant={goal.status === 'completed' ? 'secondary' : 'default'}
