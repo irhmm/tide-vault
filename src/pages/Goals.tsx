@@ -86,7 +86,7 @@ const Goals = () => {
         .from('goals')
         .select('*')
         .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
+        .order('target_date', { ascending: true });
 
       if (error) throw error;
       setGoals(data || []);

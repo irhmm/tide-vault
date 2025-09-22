@@ -103,7 +103,7 @@ const FinancialTargets = () => {
         .from('financial_targets')
         .select('*')
         .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
+        .order('deadline', { ascending: true, nullsFirst: false });
 
       if (error) throw error;
       setTargets(data || []);
