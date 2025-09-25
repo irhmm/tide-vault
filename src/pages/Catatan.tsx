@@ -209,6 +209,42 @@ const Catatan = () => {
     }
   };
 
+  const exportSingleToTxt = (item: Catatan) => {
+    try {
+      let textContent = '';
+      textContent += `${item.judul}\n`;
+      textContent += `${format(new Date(item.created_at), 'dd/MM/yyyy HH:mm')}\n`;
+      textContent += `\n${item.isi || ''}\n`;
+
+      const blob = new Blob([textContent], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Create safe filename from title
+      const safeTitle = item.judul.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+      const dateString = format(new Date(item.created_at), 'yyyy-MM-dd');
+      a.download = `${safeTitle}_${dateString}.txt`;
+      
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: 'Berhasil',
+        description: `Catatan "${item.judul}" berhasil diekspor`,
+      });
+    } catch (error) {
+      console.error('Error exporting single catatan:', error);
+      toast({
+        title: 'Error',
+        description: 'Gagal mengekspor catatan',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const openEditDialog = (catatanItem: Catatan) => {
     setEditingCatatan(catatanItem);
     form.reset({
@@ -339,6 +375,14 @@ const Catatan = () => {
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => exportSingleToTxt(item)}
+                      title="Export catatan ini ke TXT"
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
