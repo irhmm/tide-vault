@@ -12,6 +12,7 @@ import {
   Banknote,
   Receipt,
   Bell,
+  StickyNote,
   LogOut
 } from 'lucide-react';
 import {
@@ -74,6 +75,11 @@ const navItems = [
     name: 'Custom Reminders', 
     path: '/reminders', 
     icon: Bell 
+  },
+  { 
+    name: 'Catatan', 
+    path: '/catatan', 
+    icon: StickyNote 
   },
 ];
 

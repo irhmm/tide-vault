@@ -16,6 +16,7 @@ import Goals from "./pages/Goals";
 import FinancialTargets from "./pages/FinancialTargets";
 import Bills from "./pages/Bills";
 import Reminders from "./pages/Reminders";
+import Catatan from "./pages/Catatan";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="financial-targets" element={<FinancialTargets />} />
               <Route path="bills" element={<Bills />} />
               <Route path="reminders" element={<Reminders />} />
+              <Route path="catatan" element={<Catatan />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

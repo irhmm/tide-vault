@@ -134,6 +134,33 @@ export type Database = {
         }
         Relationships: []
       }
+      catatan: {
+        Row: {
+          created_at: string
+          id: string
+          isi: string | null
+          judul: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          isi?: string | null
+          judul: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          isi?: string | null
+          judul?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       debts: {
         Row: {
           amount: number
