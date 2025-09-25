@@ -168,27 +168,36 @@ const Catatan = () => {
         return;
       }
 
-      let textContent = '';
-      data.forEach((item) => {
+      // Create separate file for each note
+      data.forEach((item, index) => {
+        let textContent = '';
         textContent += `${item.judul}\n`;
         textContent += `${format(new Date(item.created_at), 'dd/MM/yyyy HH:mm')}\n`;
-        textContent += `${item.isi || ''}\n`;
-        textContent += '\n---\n\n';
-      });
+        textContent += `\n${item.isi || ''}\n`;
 
-      const blob = new Blob([textContent], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `catatan_${format(new Date(), 'yyyy-MM-dd')}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+        const blob = new Blob([textContent], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        // Create safe filename from title
+        const safeTitle = item.judul.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+        const dateString = format(new Date(item.created_at), 'yyyy-MM-dd');
+        a.download = `${safeTitle}_${dateString}.txt`;
+        
+        document.body.appendChild(a);
+        
+        // Add delay between downloads to prevent browser blocking
+        setTimeout(() => {
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        }, index * 100);
+      });
 
       toast({
         title: 'Berhasil',
-        description: 'Catatan berhasil diekspor',
+        description: `${data.length} file catatan berhasil diekspor`,
       });
     } catch (error) {
       console.error('Error exporting catatan:', error);
