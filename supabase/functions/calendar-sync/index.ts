@@ -299,7 +299,7 @@ serve(async (req) => {
             results.push({ id: reminder.id, success: true });
           } catch (error) {
             console.error(`Failed to sync reminder ${reminder.id}:`, error);
-            results.push({ id: reminder.id, success: false, error: error.message });
+            results.push({ id: reminder.id, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
           }
         }
 
@@ -338,7 +338,7 @@ serve(async (req) => {
             results.push({ id: bill.id, success: true });
           } catch (error) {
             console.error(`Failed to sync bill ${bill.id}:`, error);
-            results.push({ id: bill.id, success: false, error: error.message });
+            results.push({ id: bill.id, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
           }
         }
 
@@ -356,7 +356,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in calendar-sync function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
