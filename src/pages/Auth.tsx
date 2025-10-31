@@ -67,6 +67,10 @@ const Auth = () => {
           errorMessage = "Email atau password salah";
         } else if (result.error.message.includes('Password should be at least')) {
           errorMessage = "Password minimal 6 karakter";
+        } else if (result.error.message.includes('Failed to fetch') || result.error instanceof TypeError) {
+          errorMessage = "Tidak bisa terhubung ke server autentikasi. Pastikan URL Supabase HTTPS dan dapat dijangkau.";
+        } else if (result.error.message.includes('requested path is invalid')) {
+          errorMessage = "Konfigurasi redirect URL tidak valid. Periksa Supabase Auth URL Configuration.";
         }
         
         toast({
