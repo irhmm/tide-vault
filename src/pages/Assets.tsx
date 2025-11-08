@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -357,102 +359,79 @@ const Assets = () => {
         <p className="text-muted-foreground">Kelola dan pantau aset pribadi serta investasi Anda</p>
       </div>
 
-      {/* Summary Card */}
-      <Card className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-card to-accent/5 border-2 border-primary/10 rounded-2xl shadow-glow hover:shadow-strong transition-all duration-300 mb-6 group">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        <CardHeader className="relative z-10 pb-4">
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="p-3 rounded-xl bg-primary/10 mr-4 group-hover:bg-primary/15 transition-colors duration-300">
-                <Wallet className="w-7 h-7 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-foreground">Total Nilai Aset</h3>
-                <p className="text-sm text-muted-foreground">Portfolio keseluruhan</p>
-              </div>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="relative z-10 pt-0">
-          <div className="space-y-4">
-            <div className="flex items-baseline justify-between">
-              <p className="text-4xl font-black bg-gradient-to-r from-primary via-primary-hover to-primary bg-clip-text text-transparent">
-                {formatCurrency(totalValue)}
+      {/* Summary Card - Simplified */}
+      <Card className="mb-6">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Total Nilai Aset</p>
+              <h2 className="text-3xl font-bold">{formatCurrency(totalValue)}</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {filteredAssets.length} aset
               </p>
-              <div className="flex items-center space-x-2 text-success">
-                <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">Live</span>
-              </div>
             </div>
-            
-            <div className="flex items-center justify-between pt-4 border-t border-border/50">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-primary/20 rounded-full"></div>
-                <span className="text-sm font-medium text-muted-foreground">
-                  {filteredAssets.length} aset terdaftar
-                </span>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Terakhir diperbarui</p>
-                <p className="text-xs font-medium text-foreground">
-                  {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            </div>
+            <Wallet className="w-12 h-12 text-primary opacity-20" />
           </div>
         </CardContent>
       </Card>
 
-      {/* Actions and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="flex-1 flex gap-2">
+      {/* Actions and Filters - Reorganized */}
+      <div className="space-y-3 mb-6">
+        {/* Primary Action */}
+        <div>
+          <Button onClick={openAddDialog} className="btn-hover-scale w-full sm:w-auto" size="lg">
+            <Plus className="w-4 h-4 mr-2" />
+            Tambah Aset
+          </Button>
+        </div>
+        
+        {/* Secondary Actions and Filters */}
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Cari nama aset atau keterangan..."
+              placeholder="Cari nama aset..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-40">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Kategori</SelectItem>
-              {categories.map(category => (
-                <SelectItem key={category} value={category}>{category}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex gap-2">
-          <ExportButton 
-            data={exportData} 
-            filename="data_aset"
-            disabled={filteredAssets.length === 0}
-          />
-          <Button 
-            onClick={updateExchangeRates}
-            variant="outline"
-            size="sm"
-            disabled={updatingRates}
-            className="btn-hover-scale"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${updatingRates ? 'animate-spin' : ''}`} />
-            Update Nilai Tukar
-          </Button>
-          <Button onClick={openAddDialog} className="btn-hover-scale">
-            <Plus className="w-4 h-4 mr-2" />
-            Tambah Aset
-          </Button>
+          <div className="flex gap-2">
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-40">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Kategori</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <ExportButton 
+              data={exportData} 
+              filename="data_aset"
+              disabled={filteredAssets.length === 0}
+            />
+            {assets.some(a => a.asset_type !== 'physical') && (
+              <Button 
+                onClick={updateExchangeRates}
+                variant="outline"
+                size="sm"
+                disabled={updatingRates}
+                className="btn-hover-scale"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${updatingRates ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Update Nilai Tukar</span>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Table */}
-      <Card className="financial-card">
+      {/* Table - Simplified to 5 columns, Desktop View */}
+      <Card className="financial-card hidden md:block">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
@@ -460,19 +439,15 @@ const Assets = () => {
                 <TableRow>
                   <TableHead>Nama Aset</TableHead>
                   <TableHead>Kategori</TableHead>
-                  <TableHead>Tipe</TableHead>
-                  <TableHead>Nilai Original</TableHead>
-                  <TableHead>Nilai IDR</TableHead>
+                  <TableHead>Nilai</TableHead>
                   <TableHead>Tanggal Beli</TableHead>
-                  <TableHead>Tempat Simpan</TableHead>
-                  <TableHead>Keterangan</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredAssets.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       {searchTerm || categoryFilter !== 'all' 
                         ? 'Tidak ada data yang sesuai dengan filter' 
                         : 'Belum ada data aset. Tambah data pertama Anda!'
@@ -482,58 +457,21 @@ const Assets = () => {
                 ) : (
                   filteredAssets.map((asset) => (
                     <TableRow key={asset.id} className="table-row-hover">
-                      <TableCell className="font-medium">{asset.name}</TableCell>
-                      <TableCell>{asset.category}</TableCell>
-                      <TableCell>
-                        <span className="capitalize">
-                          {asset.asset_type === 'physical' ? 'Fisik' : 
-                           asset.asset_type === 'crypto' ? 'Crypto' :
-                           asset.asset_type === 'precious_metal' ? 'Logam Mulia' :
-                           asset.asset_type === 'stock' ? 'Saham' :
-                           asset.asset_type === 'currency' ? 'Mata Uang' : 'Fisik'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {asset.original_value && asset.symbol ? (
-                          <div className="space-y-1">
-                            <div className="font-medium">
-                              {asset.original_value} {asset.original_unit || asset.symbol}
-                            </div>
-                            {asset.exchange_rate && (
-                              <div className="text-xs text-muted-foreground">
-                                Rate: {formatCurrency(asset.exchange_rate)}
-                              </div>
-                            )}
-                            {asset.rate_last_updated && (
-                              <div className="text-xs text-muted-foreground">
-                                Update: {formatIndonesianDateTime(asset.rate_last_updated)}
-                              </div>
-                            )}
-                          </div>
-                        ) : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">{formatCurrency(asset.value)}</div>
-                          {asset.asset_type !== 'physical' && asset.original_value && asset.exchange_rate && (
-                            <div className="text-xs text-muted-foreground">Auto-calculated</div>
-                          )}
-                          {asset.symbol === 'XAU' && (asset.original_unit === 'gram' || asset.original_unit === 'kg') && (
-                            <div className="text-[10px] inline-flex items-center px-2 py-0.5 rounded bg-primary/10 text-primary">
-                              Harga Antam
-                            </div>
-                          )}
+                      <TableCell className="font-medium">
+                        <div className="flex flex-col gap-1">
+                          <span>{asset.name}</span>
+                          <Badge variant="outline" className="w-fit text-xs">
+                            {asset.asset_type === 'physical' ? 'Fisik' : 
+                             asset.asset_type === 'crypto' ? 'Crypto' :
+                             asset.asset_type === 'precious_metal' ? 'Logam Mulia' :
+                             asset.asset_type === 'stock' ? 'Saham' :
+                             asset.asset_type === 'currency' ? 'Mata Uang' : 'Fisik'}
+                          </Badge>
                         </div>
                       </TableCell>
-                      <TableCell>
-                          {formatIndonesianDate(asset.purchase_date)}
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {asset.storage_location || '-'}
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {asset.description || '-'}
-                      </TableCell>
+                      <TableCell>{asset.category}</TableCell>
+                      <TableCell className="font-medium">{formatCurrency(asset.value)}</TableCell>
+                      <TableCell>{formatIndonesianDate(asset.purchase_date)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -563,7 +501,60 @@ const Assets = () => {
         </CardContent>
       </Card>
 
-      {/* Add/Edit Dialog */}
+      {/* Card Layout - Mobile View */}
+      <div className="md:hidden space-y-3">
+        {filteredAssets.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center text-muted-foreground">
+              {searchTerm || categoryFilter !== 'all' 
+                ? 'Tidak ada data yang sesuai dengan filter' 
+                : 'Belum ada data aset. Tambah data pertama Anda!'
+              }
+            </CardContent>
+          </Card>
+        ) : (
+          filteredAssets.map((asset) => (
+            <Card key={asset.id}>
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold">{asset.name}</h3>
+                      <Badge variant="outline" className="text-xs">
+                        {asset.asset_type === 'physical' ? 'Fisik' : 
+                         asset.asset_type === 'crypto' ? 'Crypto' :
+                         asset.asset_type === 'precious_metal' ? 'Logam Mulia' :
+                         asset.asset_type === 'stock' ? 'Saham' :
+                         asset.asset_type === 'currency' ? 'Mata Uang' : 'Fisik'}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{asset.category}</p>
+                    <p className="text-lg font-bold mt-2">{formatCurrency(asset.value)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatIndonesianDate(asset.purchase_date)}
+                    </p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="icon" variant="ghost" onClick={() => handleEdit(asset)}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      onClick={() => handleDelete(asset.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Add/Edit Dialog - Simplified with Accordion */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -579,169 +570,178 @@ const Assets = () => {
           </DialogHeader>
           
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nama Aset*</Label>
-              <Input
-                id="name"
-                placeholder="Contoh: Rumah, Mobil, 1 BTC, 10 gram emas"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="category">Kategori*</Label>
-              <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih kategori" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(category => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="asset_type">Tipe Aset*</Label>
-              <Select value={formData.asset_type} onValueChange={(value) => setFormData({...formData, asset_type: value, symbol: '', original_value: '', original_unit: ''})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih tipe aset" />
-                </SelectTrigger>
-                <SelectContent>
-                  {assetTypes.map(type => (
-                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {formData.asset_type !== 'physical' ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="symbol">Simbol/Aset*</Label>
-                  <Select value={formData.symbol} onValueChange={(value) => {
-                    const selected = supportedAssets.find(asset => asset.symbol === value);
-                    setFormData({
-                      ...formData, 
-                      symbol: value,
-                      original_unit: selected?.asset_type === 'crypto' ? value : 
-                                   selected?.asset_type === 'precious_metal' ? 'gram' :
-                                   selected?.asset_type === 'stock' ? 'lembar' :
-                                   selected?.asset_type === 'currency' ? value : ''
-                    });
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih simbol aset" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getFilteredSupportedAssets().map(asset => (
-                        <SelectItem key={asset.symbol} value={asset.symbol}>
-                          {asset.symbol} - {asset.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
+            <Accordion type="single" collapsible defaultValue="basic" className="w-full">
+              <AccordionItem value="basic">
+                <AccordionTrigger className="text-sm font-semibold">Informasi Dasar</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="original_value">Jumlah*</Label>
+                    <Label htmlFor="name">Nama Aset*</Label>
                     <Input
-                      id="original_value"
-                      type="number"
-                      min="0"
-                      step="0.00000001"
-                      placeholder="1.5"
-                      value={formData.original_value}
-                      onChange={(e) => setFormData({...formData, original_value: e.target.value})}
+                      id="name"
+                      placeholder="Contoh: Rumah, Mobil, 1 BTC"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
                       required
                     />
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="original_unit">Unit</Label>
-                    {formData.asset_type === 'precious_metal' ? (
-                      <>
-                        <Select value={formData.original_unit} onValueChange={(value) => setFormData({...formData, original_unit: value})}>
+                    <Label htmlFor="category">Kategori*</Label>
+                    <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih kategori" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map(category => (
+                          <SelectItem key={category} value={category}>{category}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="asset_type">Tipe Aset*</Label>
+                    <Select value={formData.asset_type} onValueChange={(value) => setFormData({...formData, asset_type: value, symbol: '', original_value: '', original_unit: ''})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih tipe aset" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {assetTypes.map(type => (
+                          <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="value">
+                <AccordionTrigger className="text-sm font-semibold">Nilai Aset</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-4">
+                  {formData.asset_type !== 'physical' ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="symbol">Simbol/Aset*</Label>
+                        <Select value={formData.symbol} onValueChange={(value) => {
+                          const selected = supportedAssets.find(asset => asset.symbol === value);
+                          setFormData({
+                            ...formData, 
+                            symbol: value,
+                            original_unit: selected?.asset_type === 'crypto' ? value : 
+                                         selected?.asset_type === 'precious_metal' ? 'gram' :
+                                         selected?.asset_type === 'stock' ? 'lembar' :
+                                         selected?.asset_type === 'currency' ? value : ''
+                          });
+                        }}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Pilih unit" />
+                            <SelectValue placeholder="Pilih simbol aset" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="gram">Gram (Harga Antam)</SelectItem>
-                            <SelectItem value="oz">Ounce (Global XAU)</SelectItem>
-                            <SelectItem value="kg">Kilogram (Harga Antam)</SelectItem>
+                            {getFilteredSupportedAssets().map(asset => (
+                              <SelectItem key={asset.symbol} value={asset.symbol}>
+                                {asset.symbol} - {asset.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
-                        {formData.symbol === 'XAU' && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Memilih Gram/Kilogram akan menggunakan harga Antam per gram secara otomatis.
-                          </p>
-                        )}
-                      </>
-                    ) : (
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="original_value">Jumlah*</Label>
+                          <Input
+                            id="original_value"
+                            type="number"
+                            min="0"
+                            step="0.00000001"
+                            placeholder="1.5"
+                            value={formData.original_value}
+                            onChange={(e) => setFormData({...formData, original_value: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="original_unit">Unit</Label>
+                          {formData.asset_type === 'precious_metal' ? (
+                            <Select value={formData.original_unit} onValueChange={(value) => setFormData({...formData, original_unit: value})}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih unit" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="gram">Gram</SelectItem>
+                                <SelectItem value="oz">Ounce</SelectItem>
+                                <SelectItem value="kg">Kilogram</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              id="original_unit"
+                              placeholder="Unit"
+                              value={formData.original_unit}
+                              onChange={(e) => setFormData({...formData, original_unit: e.target.value})}
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground p-3 bg-muted rounded-md">
+                        💡 Nilai IDR dihitung otomatis dari nilai tukar terkini
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="value">Nilai Aset (IDR)*</Label>
                       <Input
-                        id="original_unit"
-                        placeholder="BTC, oz, lembar"
-                        value={formData.original_unit}
-                        onChange={(e) => setFormData({...formData, original_unit: e.target.value})}
+                        id="value"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="5000000"
+                        value={formData.value}
+                        onChange={(e) => setFormData({...formData, value: e.target.value})}
+                        required
                       />
-                    )}
+                    </div>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="details">
+                <AccordionTrigger className="text-sm font-semibold">Detail Tambahan (Opsional)</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="purchase_date">Tanggal Pembelian</Label>
+                    <Input
+                      id="purchase_date"
+                      type="date"
+                      value={formData.purchase_date}
+                      onChange={(e) => setFormData({...formData, purchase_date: e.target.value})}
+                    />
                   </div>
-                </div>
 
-                <div className="text-xs text-muted-foreground p-3 bg-muted rounded-md">
-                  💡 Nilai IDR akan dihitung otomatis berdasarkan nilai tukar terkini. 
-                  Klik "Update Nilai Tukar" untuk mendapatkan harga terbaru.
-                </div>
-              </>
-            ) : (
-              <div className="space-y-2">
-                <Label htmlFor="value">Nilai Aset (IDR)*</Label>
-                <Input
-                  id="value"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="5000000"
-                  value={formData.value}
-                  onChange={(e) => setFormData({...formData, value: e.target.value})}
-                  required
-                />
-              </div>
-            )}
+                  <div className="space-y-2">
+                    <Label htmlFor="storage_location">Tempat Menyimpan</Label>
+                    <Input
+                      id="storage_location"
+                      placeholder="Contoh: Rumah, Bank, Wallet"
+                      value={formData.storage_location}
+                      onChange={(e) => setFormData({...formData, storage_location: e.target.value})}
+                    />
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="purchase_date">Tanggal Pembelian</Label>
-              <Input
-                id="purchase_date"
-                type="date"
-                value={formData.purchase_date}
-                onChange={(e) => setFormData({...formData, purchase_date: e.target.value})}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="storage_location">Tempat Menyimpan</Label>
-              <Input
-                id="storage_location"
-                placeholder="Contoh: Rumah, Bank, Safe Deposit Box, Wallet"
-                value={formData.storage_location}
-                onChange={(e) => setFormData({...formData, storage_location: e.target.value})}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Keterangan</Label>
-              <Textarea
-                id="description"
-                placeholder="Tambahkan keterangan atau catatan..."
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                rows={3}
-              />
-            </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Keterangan</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Catatan tambahan..."
+                      value={formData.description}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      rows={3}
+                    />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
             <DialogFooter>
               <Button
