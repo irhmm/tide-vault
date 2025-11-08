@@ -81,6 +81,11 @@ const navItems = [
     path: '/catatan', 
     icon: StickyNote 
   },
+  { 
+    name: 'Target Pengeluaran', 
+    path: '/monthly-expense-target', 
+    icon: Target 
+  },
 ];
 
 export function AppSidebar() {

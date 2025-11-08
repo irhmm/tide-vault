@@ -17,6 +17,7 @@ import FinancialTargets from "./pages/FinancialTargets";
 import Bills from "./pages/Bills";
 import Reminders from "./pages/Reminders";
 import Catatan from "./pages/Catatan";
+import MonthlyExpenseTarget from "./pages/MonthlyExpenseTarget";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="bills" element={<Bills />} />
               <Route path="reminders" element={<Reminders />} />
               <Route path="catatan" element={<Catatan />} />
+              <Route path="monthly-expense-target" element={<MonthlyExpenseTarget />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

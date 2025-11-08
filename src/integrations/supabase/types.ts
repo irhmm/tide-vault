@@ -299,6 +299,80 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          expense_date: string
+          id: string
+          target_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          expense_date: string
+          id?: string
+          target_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          expense_date?: string
+          id?: string
+          target_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_expenses_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_expense_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_expense_targets: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          period_end: string
+          period_start: string
+          target_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          period_end: string
+          period_start: string
+          target_amount: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          period_end?: string
+          period_start?: string
+          target_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
