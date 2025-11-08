@@ -415,13 +415,6 @@ const Catatan = () => {
                   </div>
                 </div>
               </CardHeader>
-              {item.isi && (
-                <CardContent>
-                  <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                    {item.isi}
-                  </p>
-                </CardContent>
-              )}
             </Card>
           ))}
         </div>
