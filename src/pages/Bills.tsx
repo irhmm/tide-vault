@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,6 +57,8 @@ const Bills = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
+  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [filters, setFilters] = useState({
     category: 'all',
     status: 'all',
@@ -774,11 +777,8 @@ const Bills = () => {
                   <TableRow>
                     <TableHead>Nama Tagihan</TableHead>
                     <TableHead>Pembayar</TableHead>
-                    <TableHead>Nominal</TableHead>
                     <TableHead>Jatuh Tempo</TableHead>
-                    <TableHead>Pengulangan</TableHead>
                     <TableHead>Kategori</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead>Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -788,7 +788,11 @@ const Bills = () => {
                     return (
                       <TableRow 
                         key={bill.id} 
-                        className="hover:bg-muted/50 transition-colors"
+                        className="hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setSelectedBill(bill);
+                          setIsDetailDialogOpen(true);
+                        }}
                       >
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
@@ -802,7 +806,6 @@ const Bills = () => {
                           </div>
                         </TableCell>
                         <TableCell>{bill.payer_name}</TableCell>
-                        <TableCell className="font-semibold">{formatCurrency(bill.amount)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(dueDateStatus)}`}>
@@ -815,26 +818,11 @@ const Bills = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1">
-                            {bill.recurrence_type !== 'one_time' && <Repeat className="h-3 w-3 text-muted-foreground" />}
-                            <span className="text-sm">
-                              {bill.recurrence_type === 'one_time' ? 'Sekali' : 
-                               bill.recurrence_type === 'monthly' ? `Bulanan (tgl ${bill.recurrence_day})` :
-                               bill.recurrence_type === 'yearly' ? `Tahunan (${bill.recurrence_day}/${bill.recurrence_month})` : 'Custom'}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
                           <Badge variant={bill.category === 'my_bills' ? 'default' : 'secondary'}>
                             {bill.category === 'my_bills' ? 'Tagihan Saya' : 'Tagihan Orang Lain'}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={bill.status === 'active' ? 'default' : 'outline'}>
-                            {bill.status === 'active' ? 'Aktif' : 'Non Aktif'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-2">
                             <Button
                               variant="ghost"
@@ -879,6 +867,150 @@ const Bills = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Detail View Sheet */}
+      <Sheet open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <SheetContent className="overflow-y-auto sm:max-w-xl">
+          <SheetHeader>
+            <SheetTitle className="text-2xl">{selectedBill?.bill_name}</SheetTitle>
+          </SheetHeader>
+          
+          {selectedBill && (
+            <div className="space-y-6 py-6">
+              {/* Informasi Pembayar */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Informasi Pembayar</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm text-muted-foreground">Nama Pembayar</span>
+                    <span className="font-medium text-right">{selectedBill.payer_name}</span>
+                  </div>
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm text-muted-foreground">Rekening Tujuan</span>
+                    <span className="font-medium text-right">{selectedBill.destination_account || '-'}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Informasi Nominal & Kategori */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Informasi Nominal</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Nominal</span>
+                    <span className="text-xl font-bold text-primary">{formatCurrency(selectedBill.amount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Kategori</span>
+                    <Badge variant={selectedBill.category === 'my_bills' ? 'default' : 'secondary'}>
+                      {selectedBill.category === 'my_bills' ? 'Tagihan Saya' : 'Tagihan Orang Lain'}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Informasi Jatuh Tempo */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Informasi Jatuh Tempo</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm text-muted-foreground">Tanggal Jatuh Tempo</span>
+                    <div className="text-right">
+                      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${getStatusColor(getDueDateStatus(selectedBill.due_date))}`}>
+                        {getStatusIcon(getDueDateStatus(selectedBill.due_date))}
+                        {formatIndonesianDate(selectedBill.due_date)}
+                      </div>
+                    </div>
+                  </div>
+                  {selectedBill.next_due_date && (
+                    <div className="flex justify-between items-start">
+                      <span className="text-sm text-muted-foreground">Jatuh Tempo Berikutnya</span>
+                      <span className="font-medium text-right">{formatIndonesianDate(selectedBill.next_due_date)}</span>
+                    </div>
+                  )}
+                  {selectedBill.google_calendar_event_id && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Google Calendar</span>
+                      <div className="flex items-center gap-1 text-green-600">
+                        <Calendar className="h-4 w-4" />
+                        <span className="text-sm font-medium">Tersinkronisasi</span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Informasi Pengulangan */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Repeat className="h-5 w-5" />
+                    Pengaturan Pengulangan
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm text-muted-foreground">Jenis Pengulangan</span>
+                    <span className="font-medium text-right">
+                      {selectedBill.recurrence_type === 'one_time' ? 'Sekali Bayar' : 
+                       selectedBill.recurrence_type === 'monthly' ? 'Setiap Bulan' :
+                       selectedBill.recurrence_type === 'yearly' ? 'Setiap Tahun' : 'Custom'}
+                    </span>
+                  </div>
+                  {selectedBill.recurrence_type === 'monthly' && selectedBill.recurrence_day && (
+                    <div className="flex justify-between items-start">
+                      <span className="text-sm text-muted-foreground">Tanggal</span>
+                      <span className="font-medium text-right">Tanggal {selectedBill.recurrence_day} setiap bulan</span>
+                    </div>
+                  )}
+                  {selectedBill.recurrence_type === 'yearly' && selectedBill.recurrence_day && selectedBill.recurrence_month && (
+                    <div className="flex justify-between items-start">
+                      <span className="text-sm text-muted-foreground">Tanggal & Bulan</span>
+                      <span className="font-medium text-right">
+                        {selectedBill.recurrence_day}/{selectedBill.recurrence_month} setiap tahun
+                      </span>
+                    </div>
+                  )}
+                  {selectedBill.is_template && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Template Auto-Generate</span>
+                      <Badge variant="outline">
+                        <Copy className="h-3 w-3 mr-1" />
+                        Aktif
+                      </Badge>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Status & Informasi Tambahan */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Status & Informasi</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Status Tagihan</span>
+                    <Badge variant={selectedBill.status === 'active' ? 'default' : 'outline'}>
+                      {selectedBill.status === 'active' ? 'Aktif' : 'Non Aktif'}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm text-muted-foreground">Dibuat pada</span>
+                    <span className="font-medium text-right text-sm">{formatIndonesianDate(selectedBill.created_at)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
