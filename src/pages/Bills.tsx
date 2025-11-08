@@ -125,6 +125,35 @@ const Bills = () => {
     return null;
   };
 
+  const calculateInitialDueDate = (
+    recurrenceType: string,
+    day?: number,
+    month?: number
+  ): string => {
+    const today = new Date();
+    let initialDate: Date;
+
+    if (recurrenceType === 'monthly' && day) {
+      const thisMonth = new Date(today.getFullYear(), today.getMonth(), day);
+      if (thisMonth < today) {
+        initialDate = new Date(today.getFullYear(), today.getMonth() + 1, day);
+      } else {
+        initialDate = thisMonth;
+      }
+    } else if (recurrenceType === 'yearly' && day && month) {
+      const thisYear = new Date(today.getFullYear(), month - 1, day);
+      if (thisYear < today) {
+        initialDate = new Date(today.getFullYear() + 1, month - 1, day);
+      } else {
+        initialDate = thisYear;
+      }
+    } else {
+      initialDate = today;
+    }
+
+    return initialDate.toISOString().split('T')[0];
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -563,28 +592,16 @@ const Bills = () => {
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Nominal</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    placeholder="100000"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="due_date">Jatuh Tempo</Label>
-                  <Input
-                    id="due_date"
-                    type="date"
-                    value={formData.due_date}
-                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="amount">Nominal</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  placeholder="100000"
+                  required
+                />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
@@ -650,60 +667,112 @@ const Bills = () => {
                   </Select>
                 </div>
 
+                {/* Smart Date Input - adapts based on recurrence type */}
+                {formData.recurrence_type === 'one_time' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="due_date">Jatuh Tempo</Label>
+                    <Input
+                      id="due_date"
+                      type="date"
+                      value={formData.due_date}
+                      onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                )}
+
                 {formData.recurrence_type === 'monthly' && (
                   <div className="space-y-2">
-                    <Label htmlFor="recurrence_day">Tanggal dalam Bulan</Label>
+                    <Label htmlFor="recurrence_day">Tanggal Pembayaran (setiap bulan)</Label>
                     <Input
                       id="recurrence_day"
                       type="number"
                       min="1"
                       max="31"
                       value={formData.recurrence_day}
-                      onChange={(e) => setFormData({ ...formData, recurrence_day: e.target.value })}
+                      onChange={(e) => {
+                        const day = e.target.value;
+                        setFormData({ 
+                          ...formData, 
+                          recurrence_day: day,
+                          due_date: day ? calculateInitialDueDate('monthly', parseInt(day)) : ''
+                        });
+                      }}
                       placeholder="Contoh: 15 (tanggal 15 setiap bulan)"
+                      required
                     />
+                    {formData.due_date && (
+                      <p className="text-xs text-muted-foreground">
+                        Jatuh tempo pertama: {formatIndonesianDate(formData.due_date)}
+                      </p>
+                    )}
                   </div>
                 )}
 
                 {formData.recurrence_type === 'yearly' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="recurrence_day">Tanggal</Label>
-                      <Input
-                        id="recurrence_day"
-                        type="number"
-                        min="1"
-                        max="31"
-                        value={formData.recurrence_day}
-                        onChange={(e) => setFormData({ ...formData, recurrence_day: e.target.value })}
-                        placeholder="Tanggal"
-                      />
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="recurrence_day">Tanggal</Label>
+                        <Input
+                          id="recurrence_day"
+                          type="number"
+                          min="1"
+                          max="31"
+                          value={formData.recurrence_day}
+                          onChange={(e) => {
+                            const day = e.target.value;
+                            setFormData({ 
+                              ...formData, 
+                              recurrence_day: day,
+                              due_date: day && formData.recurrence_month 
+                                ? calculateInitialDueDate('yearly', parseInt(day), parseInt(formData.recurrence_month)) 
+                                : formData.due_date
+                            });
+                          }}
+                          placeholder="Tanggal"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="recurrence_month">Bulan</Label>
+                        <Select
+                          value={formData.recurrence_month}
+                          onValueChange={(value) => {
+                            setFormData({ 
+                              ...formData, 
+                              recurrence_month: value,
+                              due_date: formData.recurrence_day 
+                                ? calculateInitialDueDate('yearly', parseInt(formData.recurrence_day), parseInt(value)) 
+                                : formData.due_date
+                            });
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih bulan" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">Januari</SelectItem>
+                            <SelectItem value="2">Februari</SelectItem>
+                            <SelectItem value="3">Maret</SelectItem>
+                            <SelectItem value="4">April</SelectItem>
+                            <SelectItem value="5">Mei</SelectItem>
+                            <SelectItem value="6">Juni</SelectItem>
+                            <SelectItem value="7">Juli</SelectItem>
+                            <SelectItem value="8">Agustus</SelectItem>
+                            <SelectItem value="9">September</SelectItem>
+                            <SelectItem value="10">Oktober</SelectItem>
+                            <SelectItem value="11">November</SelectItem>
+                            <SelectItem value="12">Desember</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="recurrence_month">Bulan</Label>
-                      <Select
-                        value={formData.recurrence_month}
-                        onValueChange={(value) => setFormData({ ...formData, recurrence_month: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih bulan" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">Januari</SelectItem>
-                          <SelectItem value="2">Februari</SelectItem>
-                          <SelectItem value="3">Maret</SelectItem>
-                          <SelectItem value="4">April</SelectItem>
-                          <SelectItem value="5">Mei</SelectItem>
-                          <SelectItem value="6">Juni</SelectItem>
-                          <SelectItem value="7">Juli</SelectItem>
-                          <SelectItem value="8">Agustus</SelectItem>
-                          <SelectItem value="9">September</SelectItem>
-                          <SelectItem value="10">Oktober</SelectItem>
-                          <SelectItem value="11">November</SelectItem>
-                          <SelectItem value="12">Desember</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {formData.due_date && (
+                      <p className="text-xs text-muted-foreground">
+                        Jatuh tempo pertama: {formatIndonesianDate(formData.due_date)}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -908,15 +977,7 @@ const Bills = () => {
                         }}
                       >
                         <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {bill.bill_name}
-                            {bill.is_template && (
-                              <Badge variant="outline" className="text-xs">
-                                <Copy className="h-3 w-3 mr-1" />
-                                Template
-                              </Badge>
-                            )}
-                          </div>
+                          {bill.bill_name}
                         </TableCell>
                         <TableCell>{bill.payer_name}</TableCell>
                         <TableCell>
