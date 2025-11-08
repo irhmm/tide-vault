@@ -117,14 +117,25 @@ const Bills = () => {
     const current = new Date(dueDate);
     
     if (recurrenceType === 'monthly' && recurrenceDay) {
-      // Tetap di tanggal yang sama, bulan berikutnya
-      const nextMonth = new Date(current.getFullYear(), current.getMonth() + 1, recurrenceDay);
-      return nextMonth.toISOString().split('T')[0];
+      // Bulan berikutnya, tanggal tetap sama
+      const year = current.getMonth() === 11 ? current.getFullYear() + 1 : current.getFullYear();
+      const month = current.getMonth() === 11 ? 0 : current.getMonth() + 1;
+      
+      // Format manual: YYYY-MM-DD (hindari timezone issue)
+      const monthStr = String(month + 1).padStart(2, '0');
+      const dayStr = String(recurrenceDay).padStart(2, '0');
+      return `${year}-${monthStr}-${dayStr}`;
+      
     } else if (recurrenceType === 'yearly' && recurrenceDay && recurrenceMonth) {
-      // Tetap di tanggal dan bulan yang sama, tahun berikutnya
-      const nextYear = new Date(current.getFullYear() + 1, recurrenceMonth - 1, recurrenceDay);
-      return nextYear.toISOString().split('T')[0];
+      // Tahun berikutnya, tanggal & bulan tetap sama
+      const year = current.getFullYear() + 1;
+      
+      // Format manual: YYYY-MM-DD (hindari timezone issue)
+      const monthStr = String(recurrenceMonth).padStart(2, '0');
+      const dayStr = String(recurrenceDay).padStart(2, '0');
+      return `${year}-${monthStr}-${dayStr}`;
     }
+    
     return null;
   };
 
@@ -134,27 +145,47 @@ const Bills = () => {
     month?: number
   ): string => {
     const today = new Date();
-    let initialDate: Date;
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    const currentDay = today.getDate();
 
     if (recurrenceType === 'monthly' && day) {
-      const thisMonth = new Date(today.getFullYear(), today.getMonth(), day);
-      if (thisMonth < today) {
-        initialDate = new Date(today.getFullYear(), today.getMonth() + 1, day);
-      } else {
-        initialDate = thisMonth;
+      // Cek apakah tanggal di bulan ini sudah lewat
+      let targetMonth = currentMonth;
+      let targetYear = currentYear;
+      
+      if (day < currentDay) {
+        // Sudah lewat, gunakan bulan depan
+        targetMonth = currentMonth + 1;
+        if (targetMonth > 11) {
+          targetMonth = 0;
+          targetYear++;
+        }
       }
+      
+      const monthStr = String(targetMonth + 1).padStart(2, '0');
+      const dayStr = String(day).padStart(2, '0');
+      return `${targetYear}-${monthStr}-${dayStr}`;
+      
     } else if (recurrenceType === 'yearly' && day && month) {
-      const thisYear = new Date(today.getFullYear(), month - 1, day);
-      if (thisYear < today) {
-        initialDate = new Date(today.getFullYear() + 1, month - 1, day);
-      } else {
-        initialDate = thisYear;
+      // Cek apakah tanggal di tahun ini sudah lewat
+      let targetYear = currentYear;
+      
+      const targetDate = new Date(currentYear, month - 1, day);
+      if (targetDate < today) {
+        targetYear++;
       }
+      
+      const monthStr = String(month).padStart(2, '0');
+      const dayStr = String(day).padStart(2, '0');
+      return `${targetYear}-${monthStr}-${dayStr}`;
+      
     } else {
-      initialDate = today;
+      // One-time: return today
+      const monthStr = String(currentMonth + 1).padStart(2, '0');
+      const dayStr = String(currentDay).padStart(2, '0');
+      return `${currentYear}-${monthStr}-${dayStr}`;
     }
-
-    return initialDate.toISOString().split('T')[0];
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
