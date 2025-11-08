@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from "@/components/RichTextEditor";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -150,6 +150,12 @@ const Catatan = () => {
     }
   };
 
+  const stripHtml = (html: string): string => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
+
   const exportToTxt = async () => {
     try {
       const { data, error } = await supabase
@@ -168,12 +174,13 @@ const Catatan = () => {
         return;
       }
 
-      // Create separate file for each note
       data.forEach((item, index) => {
+        const plainTextIsi = item.isi ? stripHtml(item.isi) : '';
+        
         let textContent = '';
         textContent += `${item.judul}\n`;
         textContent += `${format(new Date(item.created_at), 'dd/MM/yyyy HH:mm')}\n`;
-        textContent += `\n${item.isi || ''}\n`;
+        textContent += `\n${plainTextIsi}\n`;
 
         const blob = new Blob([textContent], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
@@ -211,10 +218,12 @@ const Catatan = () => {
 
   const exportSingleToTxt = (item: Catatan) => {
     try {
+      const plainTextIsi = item.isi ? stripHtml(item.isi) : '';
+      
       let textContent = '';
       textContent += `${item.judul}\n`;
       textContent += `${format(new Date(item.created_at), 'dd/MM/yyyy HH:mm')}\n`;
-      textContent += `\n${item.isi || ''}\n`;
+      textContent += `\n${plainTextIsi}\n`;
 
       const blob = new Blob([textContent], { type: 'text/plain' });
       const url = window.URL.createObjectURL(blob);
@@ -318,10 +327,10 @@ const Catatan = () => {
                       <FormItem>
                         <FormLabel>Isi</FormLabel>
                         <FormControl>
-                          <Textarea
-                            placeholder="Masukkan isi catatan"
-                            className="min-h-[120px]"
-                            {...field}
+                          <RichTextEditor
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                            placeholder="Tulis isi catatan di sini..."
                           />
                         </FormControl>
                         <FormMessage />
