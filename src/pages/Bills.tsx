@@ -115,10 +115,13 @@ const Bills = () => {
     if (recurrenceType === 'one_time') return null;
     
     const current = new Date(dueDate);
+    
     if (recurrenceType === 'monthly' && recurrenceDay) {
+      // Tetap di tanggal yang sama, bulan berikutnya
       const nextMonth = new Date(current.getFullYear(), current.getMonth() + 1, recurrenceDay);
       return nextMonth.toISOString().split('T')[0];
     } else if (recurrenceType === 'yearly' && recurrenceDay && recurrenceMonth) {
+      // Tetap di tanggal dan bulan yang sama, tahun berikutnya
       const nextYear = new Date(current.getFullYear() + 1, recurrenceMonth - 1, recurrenceDay);
       return nextYear.toISOString().split('T')[0];
     }
