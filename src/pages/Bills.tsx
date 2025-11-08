@@ -265,6 +265,119 @@ const Bills = () => {
     }
   };
 
+  const handleMarkAsPaid = async (bill: Bill) => {
+    if (!confirm(`Tandai "${bill.bill_name}" sebagai lunas?`)) return;
+
+    try {
+      if (bill.recurrence_type === 'one_time') {
+        // TAGIHAN SEKALI BAYAR → HAPUS
+        const { error } = await supabase
+          .from('bills')
+          .delete()
+          .eq('id', bill.id);
+
+        if (error) throw error;
+
+        // Hapus dari Google Calendar jika di-sync
+        if (bill.google_calendar_event_id && isConnected) {
+          try {
+            await syncReminder('delete', bill.id, undefined, undefined);
+          } catch (syncError) {
+            console.error('Failed to remove from Google Calendar:', syncError);
+          }
+        }
+
+        toast({
+          title: 'Berhasil',
+          description: 'Tagihan telah ditandai lunas dan dihapus',
+        });
+
+      } else {
+        // TAGIHAN BERULANG → BUAT ENTRI BARU DENGAN DUE DATE BERIKUTNYA
+        
+        // 1. Hapus tagihan lama
+        const { error: deleteError } = await supabase
+          .from('bills')
+          .delete()
+          .eq('id', bill.id);
+
+        if (deleteError) throw deleteError;
+
+        // 2. Hitung tanggal jatuh tempo berikutnya
+        const nextDueDate = calculateNextDueDate(
+          bill.due_date,
+          bill.recurrence_type,
+          bill.recurrence_day,
+          bill.recurrence_month
+        );
+
+        if (!nextDueDate) {
+          throw new Error('Gagal menghitung tanggal jatuh tempo berikutnya');
+        }
+
+        // 3. Buat tagihan baru dengan data yang sama tapi due_date baru
+        const newBillData = {
+          bill_name: bill.bill_name,
+          payer_name: bill.payer_name,
+          destination_account: bill.destination_account,
+          amount: bill.amount,
+          due_date: nextDueDate,
+          category: bill.category,
+          status: bill.status,
+          recurrence_type: bill.recurrence_type,
+          recurrence_day: bill.recurrence_day,
+          recurrence_month: bill.recurrence_month,
+          next_due_date: calculateNextDueDate(
+            nextDueDate,
+            bill.recurrence_type,
+            bill.recurrence_day,
+            bill.recurrence_month
+          ),
+          is_template: bill.is_template,
+          sync_to_google_calendar: bill.sync_to_google_calendar,
+          user_id: user!.id,
+        };
+
+        const { data: newBill, error: insertError } = await supabase
+          .from('bills')
+          .insert([newBillData])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        // 4. Sync ke Google Calendar jika diperlukan
+        if (bill.sync_to_google_calendar && isConnected) {
+          try {
+            // Hapus event lama jika ada
+            if (bill.google_calendar_event_id) {
+              await syncReminder('delete', bill.id, undefined, undefined);
+            }
+            
+            // Buat event baru
+            await syncReminder('create', newBill.id, undefined, newBill);
+          } catch (syncError) {
+            console.error('Failed to sync to Google Calendar:', syncError);
+          }
+        }
+
+        toast({
+          title: 'Berhasil',
+          description: `Tagihan lunas! Tagihan berikutnya: ${formatIndonesianDate(nextDueDate)}`,
+        });
+      }
+
+      fetchBills();
+    } catch (error) {
+      console.error('Error marking bill as paid:', error);
+      toast({
+        title: 'Error',
+        description: 'Gagal menandai tagihan sebagai lunas',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       bill_name: '',
@@ -824,6 +937,15 @@ const Bills = () => {
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleMarkAsPaid(bill)}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Lunas
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
