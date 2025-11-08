@@ -7,6 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { formatCurrency, formatIndonesianDate } from "@/lib/utils";
@@ -48,6 +58,7 @@ export default function MonthlyExpenseTarget() {
   const [manualExpenses, setManualExpenses] = useState<ManualExpense[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingExpense, setEditingExpense] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Form states
   const [targetAmount, setTargetAmount] = useState("");
@@ -110,7 +121,7 @@ export default function MonthlyExpenseTarget() {
   useEffect(() => {
     fetchData();
 
-    // Subscribe to real-time updates
+    // Subscribe to real-time updates with direct state updates
     const targetChannel = supabase
       .channel('monthly-expense-targets-changes')
       .on(
@@ -121,7 +132,16 @@ export default function MonthlyExpenseTarget() {
           table: 'monthly_expense_targets',
           filter: `user_id=eq.${user?.id}`
         },
-        () => fetchData()
+        (payload) => {
+          if (payload.eventType === 'UPDATE' && payload.new.id === activeTarget?.id) {
+            setActiveTarget(payload.new as MonthlyExpenseTarget);
+          } else if (payload.eventType === 'INSERT') {
+            setActiveTarget(payload.new as MonthlyExpenseTarget);
+          } else if (payload.eventType === 'DELETE') {
+            setActiveTarget(null);
+            setManualExpenses([]);
+          }
+        }
       )
       .subscribe();
 
@@ -135,7 +155,17 @@ export default function MonthlyExpenseTarget() {
           table: 'manual_expenses',
           filter: `user_id=eq.${user?.id}`
         },
-        () => fetchData()
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setManualExpenses(prev => [payload.new as ManualExpense, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setManualExpenses(prev => 
+              prev.map(exp => exp.id === payload.new.id ? payload.new as ManualExpense : exp)
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setManualExpenses(prev => prev.filter(exp => exp.id !== payload.old.id));
+          }
+        }
       )
       .subscribe();
 
@@ -143,7 +173,7 @@ export default function MonthlyExpenseTarget() {
       supabase.removeChannel(targetChannel);
       supabase.removeChannel(expensesChannel);
     };
-  }, [user]);
+  }, [user, activeTarget?.id]);
 
   // Handle save/update target
   const handleSaveTarget = async (e: React.FormEvent) => {
@@ -269,6 +299,39 @@ export default function MonthlyExpenseTarget() {
     setExpenseDate(expense.expense_date);
   };
 
+  // Handle delete target
+  const handleDeleteTarget = async () => {
+    if (!activeTarget) return;
+    
+    try {
+      // Delete all manual expenses first
+      const { error: expenseError } = await supabase
+        .from("manual_expenses")
+        .delete()
+        .eq("target_id", activeTarget.id);
+      
+      if (expenseError) throw expenseError;
+      
+      // Then delete the target
+      const { error: targetError } = await supabase
+        .from("monthly_expense_targets")
+        .delete()
+        .eq("id", activeTarget.id);
+      
+      if (targetError) throw targetError;
+      
+      toast.success("Target berhasil dihapus");
+      setActiveTarget(null);
+      setManualExpenses([]);
+      setTargetAmount("");
+      setPeriodStart(new Date().toISOString().split('T')[0]);
+      setShowDeleteDialog(false);
+    } catch (error: any) {
+      console.error("Error deleting target:", error);
+      toast.error("Gagal menghapus target");
+    }
+  };
+
   // Calculate statistics
   const totalExpenses = manualExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
   const remaining = activeTarget ? Number(activeTarget.target_amount) - totalExpenses : 0;
@@ -314,11 +377,20 @@ export default function MonthlyExpenseTarget() {
       {/* Summary Card */}
       {activeTarget && (
         <Card>
-          <CardHeader>
-            <CardTitle>Ringkasan Target</CardTitle>
-            <CardDescription>
-              Periode: {formatIndonesianDate(activeTarget.period_start)} - {formatIndonesianDate(activeTarget.period_end)}
-            </CardDescription>
+          <CardHeader className="flex flex-row items-start justify-between space-y-0">
+            <div className="space-y-1.5">
+              <CardTitle>Ringkasan Target</CardTitle>
+              <CardDescription>
+                Periode: {formatIndonesianDate(activeTarget.period_start)} - {formatIndonesianDate(activeTarget.period_end)}
+              </CardDescription>
+            </div>
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -394,9 +466,23 @@ export default function MonthlyExpenseTarget() {
                 className="bg-muted"
               />
             </div>
-            <Button type="submit" className="w-full md:w-auto">
-              {activeTarget ? "Perbarui Target" : "Simpan Target"}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="submit" className="w-full md:w-auto">
+                {activeTarget ? "Perbarui Target" : "Simpan Target"}
+              </Button>
+              {activeTarget && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setTargetAmount("");
+                    setPeriodStart(new Date().toISOString().split('T')[0]);
+                  }}
+                >
+                  Reset Form
+                </Button>
+              )}
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -529,6 +615,25 @@ export default function MonthlyExpenseTarget() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Target Pengeluaran?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini akan menghapus target dan semua pengeluaran manual yang terkait. 
+              Data yang dihapus tidak dapat dikembalikan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTarget} className="bg-destructive hover:bg-destructive/90">
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
