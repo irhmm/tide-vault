@@ -121,7 +121,7 @@ export default function MonthlyExpenseTarget() {
   useEffect(() => {
     fetchData();
 
-    // Subscribe to real-time updates with direct state updates
+    // Subscribe to real-time updates and refetch to ensure consistency
     const targetChannel = supabase
       .channel('monthly-expense-targets-changes')
       .on(
@@ -132,15 +132,9 @@ export default function MonthlyExpenseTarget() {
           table: 'monthly_expense_targets',
           filter: `user_id=eq.${user?.id}`
         },
-        (payload) => {
-          if (payload.eventType === 'UPDATE' && payload.new.id === activeTarget?.id) {
-            setActiveTarget(payload.new as MonthlyExpenseTarget);
-          } else if (payload.eventType === 'INSERT') {
-            setActiveTarget(payload.new as MonthlyExpenseTarget);
-          } else if (payload.eventType === 'DELETE') {
-            setActiveTarget(null);
-            setManualExpenses([]);
-          }
+        () => {
+          // Ensure latest data after add/update/delete
+          fetchData();
         }
       )
       .subscribe();
@@ -155,16 +149,9 @@ export default function MonthlyExpenseTarget() {
           table: 'manual_expenses',
           filter: `user_id=eq.${user?.id}`
         },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setManualExpenses(prev => [payload.new as ManualExpense, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setManualExpenses(prev => 
-              prev.map(exp => exp.id === payload.new.id ? payload.new as ManualExpense : exp)
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setManualExpenses(prev => prev.filter(exp => exp.id !== payload.old.id));
-          }
+        () => {
+          // Refetch to keep totals and ordering consistent
+          fetchData();
         }
       )
       .subscribe();
@@ -173,7 +160,7 @@ export default function MonthlyExpenseTarget() {
       supabase.removeChannel(targetChannel);
       supabase.removeChannel(expensesChannel);
     };
-  }, [user, activeTarget?.id]);
+  }, [user]);
 
   // Handle save/update target
   const handleSaveTarget = async (e: React.FormEvent) => {
@@ -200,6 +187,7 @@ export default function MonthlyExpenseTarget() {
 
         if (error) throw error;
         toast.success("Target berhasil diperbarui");
+        await fetchData();
       } else {
         // Create new target
         const { error } = await supabase
@@ -214,6 +202,7 @@ export default function MonthlyExpenseTarget() {
 
         if (error) throw error;
         toast.success("Target berhasil disimpan");
+        await fetchData();
       }
 
       setTargetAmount("");
