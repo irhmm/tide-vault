@@ -962,6 +962,7 @@ const Bills = () => {
                   <TableRow>
                     <TableHead>Nama Tagihan</TableHead>
                     <TableHead>Pembayar</TableHead>
+                    <TableHead>Nominal</TableHead>
                     <TableHead>Jatuh Tempo</TableHead>
                     <TableHead>Kategori</TableHead>
                     <TableHead>Aksi</TableHead>
@@ -983,6 +984,9 @@ const Bills = () => {
                           {bill.bill_name}
                         </TableCell>
                         <TableCell>{bill.payer_name}</TableCell>
+                        <TableCell className="font-semibold text-primary">
+                          {formatCurrency(bill.amount)}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(dueDateStatus)}`}>
