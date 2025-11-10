@@ -479,6 +479,12 @@ const Catatan = () => {
                   </div>
                 </div>
               </CardHeader>
+              <CardContent>
+                <div 
+                  className="prose prose-sm max-w-none whitespace-pre-wrap line-clamp-3 text-foreground"
+                  dangerouslySetInnerHTML={{ __html: item.isi || '<p class="text-muted-foreground italic">Tidak ada isi</p>' }}
+                />
+              </CardContent>
             </Card>
           ))}
         </div>
