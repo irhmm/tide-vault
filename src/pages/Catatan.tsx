@@ -77,16 +77,14 @@ const Catatan = () => {
 
   const onSubmit = async (data: CatatanFormData) => {
     try {
-      // Normalize content before saving to ensure consistency
-      const normalizedIsi = normalizeBeforeSave(data.isi || '');
-      
+      const savedIsi = typeof data.isi === 'string' && data.isi.length > 0 ? data.isi : '<p><br></p>';
+
       if (editingCatatan) {
-        // Update existing catatan
         const { error } = await supabase
           .from('catatan')
           .update({
             judul: data.judul,
-            isi: normalizedIsi,
+            isi: savedIsi,
             updated_at: new Date().toISOString(),
           })
           .eq('id', editingCatatan.id)
@@ -98,12 +96,11 @@ const Catatan = () => {
           description: 'Catatan berhasil diperbarui',
         });
       } else {
-        // Create new catatan
         const { error } = await supabase
           .from('catatan')
           .insert({
             judul: data.judul,
-            isi: normalizedIsi,
+            isi: savedIsi,
             user_id: user?.id,
           });
 
@@ -170,31 +167,23 @@ const Catatan = () => {
     return text.replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
   };
 
-  const normalizeForEditor = (raw: string): string => {
+  const toEditorHTML = (raw: string): string => {
     if (!raw) return '<p><br></p>';
+    
+    // Check if content already looks like TipTap HTML
+    const looksLikeTipTap = /<\/?(p|br|ul|ol|li|code|pre|strong|em)[\s/>]/i.test(raw);
+    if (looksLikeTipTap) return raw;
 
-    const unescaped = raw
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
-      .replace(/\r\n?/g, '\n');
-
-    const plain = unescaped
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>\s*<p>/gi, '\n\n')
-      .replace(/<\/(div|li|h[1-6])>/gi, '\n')
-      .replace(/<li[^>]*>/gi, '• ')
-      .replace(/<[^>]*>/g, '');
-
-    const paragraphs = plain.split(/\n\n/);
-    const html = paragraphs.map((p) => {
-      const lines = p.split('\n'); // don't filter empty lines
-      const content = lines.join('<br>');
-      return `<p>${content || '<br>'}</p>`;
-    }).join('');
-
-    return html || '<p><br></p>';
+    // Legacy plain text - convert to minimal HTML while preserving line breaks
+    const text = raw.replace(/\r\n?/g, '\n');
+    return text
+      .split(/\n\n/)
+      .map(p => {
+        const lines = p.split('\n');
+        const content = lines.join('<br>');
+        return `<p>${content || '<br>'}</p>`;
+      })
+      .join('') || '<p><br></p>';
   };
 
   const normalizeBeforeSave = (html: string): string => {
@@ -324,7 +313,7 @@ const Catatan = () => {
     setEditingCatatan(catatanItem);
     form.reset({
       judul: catatanItem.judul,
-      isi: normalizeForEditor(catatanItem.isi || ''),
+      isi: toEditorHTML(catatanItem.isi || ''),
     });
     setIsDialogOpen(true);
   };
@@ -333,7 +322,7 @@ const Catatan = () => {
     setEditingCatatan(null);
     form.reset({
       judul: '',
-      isi: '',
+      isi: '<p><br></p>',
     });
     setIsDialogOpen(true);
   };

@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Bold from '@tiptap/extension-bold';
@@ -8,6 +9,7 @@ import CodeBlock from '@tiptap/extension-code-block';
 import { Button } from '@/components/ui/button';
 import { Bold as BoldIcon, Italic as ItalicIcon, RemoveFormatting, Code, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/use-toast';
 
 interface RichTextEditorProps {
   value: string;
@@ -82,11 +84,19 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
         hardBreak: false,
         codeBlock: false,
       }),
-      Bold,
-      Italic,
+      Bold.configure({
+        HTMLAttributes: {
+          class: 'font-bold',
+        },
+      }),
+      Italic.configure({
+        HTMLAttributes: {
+          class: 'italic',
+        },
+      }),
       Paragraph.configure({
         HTMLAttributes: {
-          class: 'whitespace-pre-wrap',
+          class: 'my-1',
         },
       }),
       HardBreak.extend({
@@ -98,54 +108,50 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
       }),
       CodeBlock.configure({
         HTMLAttributes: {
-          class: 'bg-muted p-2 rounded font-mono text-sm whitespace-pre-wrap',
+          class: 'bg-muted p-2 rounded my-2 font-mono text-sm',
         },
       }),
     ],
-    content: value || '',
+    content: value || '<p><br></p>',
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[120px] p-3 whitespace-pre-wrap',
-        style: 'white-space: pre-wrap;',
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[200px] p-3',
       },
       handleDOMEvents: {
         copy: (view, event) => {
-          try {
-            const slice = view.state.selection.content();
-            const text = serializeSliceToPlain(slice);
-            event.clipboardData?.setData('text/plain', text);
-            event.preventDefault();
-            return true;
-          } catch (e) {
-            return false;
-          }
+          const { state } = view;
+          const { from, to } = state.selection;
+          const slice = state.doc.slice(from, to, true);
+          const plainText = serializeSliceToPlain(slice);
+
+          event.clipboardData?.setData('text/plain', plainText);
+          event.preventDefault();
+          return true;
         },
         cut: (view, event) => {
-          try {
-            const slice = view.state.selection.content();
-            const text = serializeSliceToPlain(slice);
-            event.clipboardData?.setData('text/plain', text);
-            event.preventDefault();
-            view.dispatch(view.state.tr.deleteSelection());
-            return true;
-          } catch (e) {
-            return false;
-          }
+          const { state, dispatch } = view;
+          const { from, to } = state.selection;
+          const slice = state.doc.slice(from, to, true);
+          const plainText = serializeSliceToPlain(slice);
+
+          event.clipboardData?.setData('text/plain', plainText);
+          const tr = state.tr.deleteRange(from, to);
+          dispatch(tr);
+          event.preventDefault();
+          return true;
         },
       },
-      clipboardTextSerializer: (slice) => {
-        return serializeSliceToPlain(slice);
-      },
       transformPastedHTML(html) {
-        // Clean up HTML but preserve structure
         return html
-          .replace(/<br\s*\/?>/gi, '\n') // Convert <br> to newline
-          .replace(/<\/p>\s*<p>/gi, '\n\n') // Convert paragraph breaks to double newline
-          .replace(/<[^>]*>/g, '') // Remove all other HTML tags
-          .replace(/\n/g, '<br>'); // Convert newlines back to <br>
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<\/p>\s*<p>/gi, '\n\n')
+          .replace(/<\/div>\s*<div[^>]*>/gi, '\n')
+          .replace(/<li[^>]*>/gi, '• ')
+          .replace(/<[^>]*>/g, '')
+          .replace(/\n/g, '<br>');
       },
       transformPastedText(text) {
         const unescaped = text
@@ -158,35 +164,37 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
         const asPlain = unescaped
           .replace(/<br\s*\/?>/gi, '\n')
           .replace(/<\/p>\s*<p>/gi, '\n\n')
-          .replace(/<\/(div|li|h[1-6])>/gi, '\n')
+          .replace(/<\/div>\s*<div[^>]*>/gi, '\n')
           .replace(/<li[^>]*>/gi, '• ')
           .replace(/<[^>]*>/g, '');
 
-        return asPlain; // preserve all newlines and spaces
+        return asPlain;
       },
     },
   });
 
-  const copyAsPlainText = async () => {
+  useEffect(() => {
+    if (editor && typeof value === 'string') {
+      const current = editor.getHTML();
+      if (value !== current) {
+        editor.commands.setContent(value || '<p><br></p>');
+      }
+    }
+  }, [value, editor]);
+
+  const copyAsPlainText = () => {
     if (!editor) return;
     
-    try {
-      const { state } = editor;
-      const { from, to } = state.selection;
-      let plainText = '';
-      
-      if (from !== to) {
-        plainText = state.doc.textBetween(from, to, '\n');
-      } else {
-        const allSlice = { content: state.doc.content };
-        plainText = serializeSliceToPlain(allSlice);
-      }
-      
-      await navigator.clipboard.writeText(plainText);
-      console.log('Text copied to clipboard as plain text');
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
+    const { from, to } = editor.state.selection;
+    const slice = editor.state.doc.slice(from, to, true);
+    const plainText = serializeSliceToPlain(slice);
+    
+    navigator.clipboard.writeText(plainText).then(() => {
+      toast({
+        title: "Berhasil",
+        description: "Teks berhasil disalin sebagai plain text",
+      });
+    });
   };
 
   if (!editor) {
