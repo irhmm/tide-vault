@@ -56,18 +56,34 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
         style: 'white-space: pre-wrap;',
       },
       clipboardTextSerializer: (content) => {
-        // Custom serializer untuk copy behavior - preserve line breaks
-        let text = '';
-        content.content.descendants((node: any) => {
-          if (node.isText) {
-            text += node.text;
-          } else if (node.type.name === 'hardBreak') {
-            text += '\n';
-          } else if (node.type.name === 'paragraph' && text.length > 0) {
-            text += '\n';
+        // Custom serializer untuk copy behavior - preserve line breaks dengan sempurna
+        const lines: string[] = [];
+        
+        content.content.forEach((node: any) => {
+          if (node.type.name === 'paragraph') {
+            let lineText = '';
+            node.content?.forEach((child: any) => {
+              if (child.isText) {
+                lineText += child.text;
+              } else if (child.type.name === 'hardBreak') {
+                lines.push(lineText);
+                lineText = '';
+              }
+            });
+            lines.push(lineText);
+          } else if (node.type.name === 'codeBlock') {
+            // Handle code block
+            let codeText = '';
+            node.content?.forEach((child: any) => {
+              if (child.isText) {
+                codeText += child.text;
+              }
+            });
+            lines.push(codeText);
           }
         });
-        return text;
+        
+        return lines.join('\n');
       },
       transformPastedHTML(html) {
         return html
