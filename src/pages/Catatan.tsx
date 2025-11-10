@@ -151,9 +151,48 @@ const Catatan = () => {
   };
 
   const stripHtml = (html: string): string => {
+    if (!html) return '';
+    const unescaped = html
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&');
+
+    // Let browser parse valid HTML, then extract textContent
     const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || '';
+    tmp.innerHTML = unescaped
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>\s*<p>/gi, '\n\n');
+    const text = tmp.textContent || tmp.innerText || '';
+    return text.replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  };
+
+  const normalizeForEditor = (raw: string): string => {
+    if (!raw) return '';
+
+    // 1) Unescape common entities
+    const unescaped = raw
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/\r\n?/g, '\n');
+
+    // 2) Convert tags to newlines, then strip other tags
+    const plain = unescaped
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>\s*<p>/gi, '\n\n')
+      .replace(/<\/(div|li|h[1-6])>/gi, '\n')
+      .replace(/<li[^>]*>/gi, '• ')
+      .replace(/<[^>]*>/g, '');
+
+    // 3) Reassemble as minimal HTML for editor: paragraphs + <br>
+    const html = plain
+      .split(/\n\n+/)
+      .map(p => `<p>${p.split('\n').join('<br>')}</p>`)
+      .join('');
+
+    return html || '<p><br></p>';
   };
 
   const exportToTxt = async () => {
@@ -258,7 +297,7 @@ const Catatan = () => {
     setEditingCatatan(catatanItem);
     form.reset({
       judul: catatanItem.judul,
-      isi: catatanItem.isi || '',
+      isi: normalizeForEditor(catatanItem.isi || ''),
     });
     setIsDialogOpen(true);
   };

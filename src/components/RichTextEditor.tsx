@@ -148,25 +148,24 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
           .replace(/\n/g, '<br>'); // Convert newlines back to <br>
       },
       transformPastedText(text) {
-        // Step 1: Strip any HTML tags that might be in the pasted text
-        // This prevents literal <p>, <br>, etc from showing up
-        const cleanText = text
-          .replace(/<[^>]*>/g, '') // Remove all HTML tags
-          .replace(/&nbsp;/g, ' ') // Replace &nbsp; with regular space
-          .replace(/&lt;/g, '<')   // Unescape HTML entities if any
+        // Unescape entities and normalize line breaks
+        const unescaped = text
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
-          .replace(/&amp;/g, '&');
-        
-        // Step 2: Convert natural line breaks to proper HTML structure
-        // Double line break = new paragraph, single = <br>
-        const paragraphs = cleanText.split(/\n\n+/);
-        return paragraphs
-          .map(para => {
-            const lines = para.split('\n').filter(line => line.trim());
-            if (lines.length === 0) return '<p><br></p>';
-            return `<p>${lines.join('<br>')}</p>`;
-          })
-          .join('');
+          .replace(/&amp;/g, '&')
+          .replace(/\r\n?/g, '\n');
+
+        // Convert common HTML tags to newlines, then strip all other tags
+        const asPlain = unescaped
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<\/p>\s*<p>/gi, '\n\n')
+          .replace(/<\/(div|li|h[1-6])>/gi, '\n')
+          .replace(/<li[^>]*>/gi, '• ')
+          .replace(/<[^>]*>/g, '');
+
+        // Clean up excessive newlines
+        return asPlain.replace(/\n{3,}/g, '\n\n').trimEnd();
       },
     },
   });
