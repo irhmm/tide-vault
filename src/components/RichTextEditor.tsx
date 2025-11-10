@@ -148,7 +148,6 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
           .replace(/\n/g, '<br>'); // Convert newlines back to <br>
       },
       transformPastedText(text) {
-        // Unescape entities and normalize line breaks
         const unescaped = text
           .replace(/&nbsp;/g, ' ')
           .replace(/&lt;/g, '<')
@@ -156,7 +155,6 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
           .replace(/&amp;/g, '&')
           .replace(/\r\n?/g, '\n');
 
-        // Convert common HTML tags to newlines, then strip all other tags
         const asPlain = unescaped
           .replace(/<br\s*\/?>/gi, '\n')
           .replace(/<\/p>\s*<p>/gi, '\n\n')
@@ -164,8 +162,7 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
           .replace(/<li[^>]*>/gi, '• ')
           .replace(/<[^>]*>/g, '');
 
-        // Clean up excessive newlines
-        return asPlain.replace(/\n{3,}/g, '\n\n').trimEnd();
+        return asPlain; // preserve all newlines and spaces
       },
     },
   });

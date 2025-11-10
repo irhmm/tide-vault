@@ -171,9 +171,8 @@ const Catatan = () => {
   };
 
   const normalizeForEditor = (raw: string): string => {
-    if (!raw) return '';
+    if (!raw) return '<p><br></p>';
 
-    // 1) Unescape common entities
     const unescaped = raw
       .replace(/&nbsp;/g, ' ')
       .replace(/&lt;/g, '<')
@@ -181,7 +180,6 @@ const Catatan = () => {
       .replace(/&amp;/g, '&')
       .replace(/\r\n?/g, '\n');
 
-    // 2) Convert tags to newlines, then strip other tags
     const plain = unescaped
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/<\/p>\s*<p>/gi, '\n\n')
@@ -189,19 +187,19 @@ const Catatan = () => {
       .replace(/<li[^>]*>/gi, '• ')
       .replace(/<[^>]*>/g, '');
 
-    // 3) Reassemble as minimal HTML for editor: paragraphs + <br>
-    const html = plain
-      .split(/\n\n+/)
-      .map(p => `<p>${p.split('\n').join('<br>')}</p>`)
-      .join('');
+    const paragraphs = plain.split(/\n\n/);
+    const html = paragraphs.map((p) => {
+      const lines = p.split('\n'); // don't filter empty lines
+      const content = lines.join('<br>');
+      return `<p>${content || '<br>'}</p>`;
+    }).join('');
 
     return html || '<p><br></p>';
   };
 
   const normalizeBeforeSave = (html: string): string => {
-    if (!html) return '';
+    if (!html) return '<p><br></p>';
 
-    // 1) Strip HTML to get plain text with line breaks
     const tmp = document.createElement('div');
     tmp.innerHTML = html
       .replace(/<br\s*\/?>/gi, '\n')
@@ -209,25 +207,19 @@ const Catatan = () => {
       .replace(/<\/div>/gi, '\n')
       .replace(/<\/li>/gi, '\n')
       .replace(/<\/(h[1-6])>/gi, '\n');
-    
+
     const plainText = (tmp.textContent || tmp.innerText || '')
-      .replace(/\r\n?/g, '\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
+      .replace(/\u00A0/g, ' ')  // NBSP → space
+      .replace(/\r\n?/g, '\n'); // normalize newline only, no trim
 
-    // 2) Rebuild as consistent HTML structure
-    if (!plainText) return '<p><br></p>';
-    
-    const paragraphs = plainText.split(/\n\n+/);
-    const normalizedHtml = paragraphs
-      .map(p => {
-        const lines = p.split('\n').filter(line => line.trim());
-        if (lines.length === 0) return '<p><br></p>';
-        return `<p>${lines.join('<br>')}</p>`;
-      })
-      .join('');
+    const paragraphs = plainText.split(/\n\n/); // keep empty paragraphs
+    const normalizedHtml = paragraphs.map((p) => {
+      const lines = p.split('\n'); // don't filter empty lines
+      const content = lines.join('<br>');
+      return `<p>${content || '<br>'}</p>`;
+    }).join('');
 
-    return normalizedHtml;
+    return normalizedHtml || '<p><br></p>';
   };
 
   const exportToTxt = async () => {
