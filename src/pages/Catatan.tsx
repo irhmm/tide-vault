@@ -77,13 +77,16 @@ const Catatan = () => {
 
   const onSubmit = async (data: CatatanFormData) => {
     try {
+      // Normalize content before saving to ensure consistency
+      const normalizedIsi = normalizeBeforeSave(data.isi || '');
+      
       if (editingCatatan) {
         // Update existing catatan
         const { error } = await supabase
           .from('catatan')
           .update({
             judul: data.judul,
-            isi: data.isi,
+            isi: normalizedIsi,
             updated_at: new Date().toISOString(),
           })
           .eq('id', editingCatatan.id)
@@ -100,7 +103,7 @@ const Catatan = () => {
           .from('catatan')
           .insert({
             judul: data.judul,
-            isi: data.isi,
+            isi: normalizedIsi,
             user_id: user?.id,
           });
 
@@ -193,6 +196,38 @@ const Catatan = () => {
       .join('');
 
     return html || '<p><br></p>';
+  };
+
+  const normalizeBeforeSave = (html: string): string => {
+    if (!html) return '';
+
+    // 1) Strip HTML to get plain text with line breaks
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>\s*<p>/gi, '\n\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<\/(h[1-6])>/gi, '\n');
+    
+    const plainText = (tmp.textContent || tmp.innerText || '')
+      .replace(/\r\n?/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    // 2) Rebuild as consistent HTML structure
+    if (!plainText) return '<p><br></p>';
+    
+    const paragraphs = plainText.split(/\n\n+/);
+    const normalizedHtml = paragraphs
+      .map(p => {
+        const lines = p.split('\n').filter(line => line.trim());
+        if (lines.length === 0) return '<p><br></p>';
+        return `<p>${lines.join('<br>')}</p>`;
+      })
+      .join('');
+
+    return normalizedHtml;
   };
 
   const exportToTxt = async () => {
