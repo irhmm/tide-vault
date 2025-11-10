@@ -51,11 +51,6 @@ const serializeSliceToPlain = (slice: any): string => {
     
     const nodeArray = Array.isArray(nodes) ? nodes : nodes.content || [nodes];
     nodeArray.forEach((node: any) => {
-      if (!firstBlock && lines.length > 0 && lines[lines.length - 1] !== '') {
-        lines.push('');
-      }
-      firstBlock = false;
-
       if (node.type?.name === 'paragraph') {
         processParagraph(node);
       } else if (node.type?.name === 'codeBlock') {
@@ -119,30 +114,6 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
     editorProps: {
       attributes: {
         class: 'prose prose-sm max-w-none focus:outline-none min-h-[200px] p-3',
-      },
-      handleDOMEvents: {
-        copy: (view, event) => {
-          const { state } = view;
-          const { from, to } = state.selection;
-          const slice = state.doc.slice(from, to, true);
-          const plainText = serializeSliceToPlain(slice);
-
-          event.clipboardData?.setData('text/plain', plainText);
-          event.preventDefault();
-          return true;
-        },
-        cut: (view, event) => {
-          const { state, dispatch } = view;
-          const { from, to } = state.selection;
-          const slice = state.doc.slice(from, to, true);
-          const plainText = serializeSliceToPlain(slice);
-
-          event.clipboardData?.setData('text/plain', plainText);
-          const tr = state.tr.deleteRange(from, to);
-          dispatch(tr);
-          event.preventDefault();
-          return true;
-        },
       },
       transformPastedHTML(html) {
         return html
