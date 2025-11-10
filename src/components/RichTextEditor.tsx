@@ -140,13 +140,26 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
         return serializeSliceToPlain(slice);
       },
       transformPastedHTML(html) {
+        // Clean up HTML but preserve structure
         return html
-          .replace(/<br\s*\/?>/gi, '<br>')
-          .replace(/\n/g, '<br>');
+          .replace(/<br\s*\/?>/gi, '\n') // Convert <br> to newline
+          .replace(/<\/p>\s*<p>/gi, '\n\n') // Convert paragraph breaks to double newline
+          .replace(/<[^>]*>/g, '') // Remove all other HTML tags
+          .replace(/\n/g, '<br>'); // Convert newlines back to <br>
       },
       transformPastedText(text) {
-        // Single line break = <br>, double line break = new paragraph
-        const paragraphs = text.split(/\n\n+/);
+        // Step 1: Strip any HTML tags that might be in the pasted text
+        // This prevents literal <p>, <br>, etc from showing up
+        const cleanText = text
+          .replace(/<[^>]*>/g, '') // Remove all HTML tags
+          .replace(/&nbsp;/g, ' ') // Replace &nbsp; with regular space
+          .replace(/&lt;/g, '<')   // Unescape HTML entities if any
+          .replace(/&gt;/g, '>')
+          .replace(/&amp;/g, '&');
+        
+        // Step 2: Convert natural line breaks to proper HTML structure
+        // Double line break = new paragraph, single = <br>
+        const paragraphs = cleanText.split(/\n\n+/);
         return paragraphs
           .map(para => {
             const lines = para.split('\n').filter(line => line.trim());
