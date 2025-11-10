@@ -424,11 +424,6 @@ const Catatan = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-3">
-                  {item.isi ? stripHtml(item.isi) : 'Tidak ada isi'}
-                </p>
-              </CardContent>
             </Card>
           ))}
         </div>
