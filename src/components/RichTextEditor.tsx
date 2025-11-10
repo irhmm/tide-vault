@@ -16,6 +16,62 @@ interface RichTextEditorProps {
   className?: string;
 }
 
+// Helper function to serialize editor content to plain text
+const serializeSliceToPlain = (slice: any): string => {
+  const lines: string[] = [];
+  
+  const processParagraph = (node: any) => {
+    let line = '';
+    node?.content?.forEach((child: any) => {
+      if (child.isText) {
+        line += child.text;
+      } else if (child.type?.name === 'hardBreak') {
+        lines.push(line);
+        line = '';
+      }
+    });
+    lines.push(line);
+  };
+
+  const processCodeBlock = (node: any) => {
+    let code = '';
+    node?.content?.forEach((child: any) => {
+      if (child.isText) code += child.text;
+    });
+    code.split('\n').forEach((l) => lines.push(l));
+  };
+
+  const content = slice?.content;
+  let firstBlock = true;
+  
+  const processNodes = (nodes: any) => {
+    if (!nodes) return;
+    
+    const nodeArray = Array.isArray(nodes) ? nodes : nodes.content || [nodes];
+    nodeArray.forEach((node: any) => {
+      if (!firstBlock && lines.length > 0 && lines[lines.length - 1] !== '') {
+        lines.push('');
+      }
+      firstBlock = false;
+
+      if (node.type?.name === 'paragraph') {
+        processParagraph(node);
+      } else if (node.type?.name === 'codeBlock') {
+        processCodeBlock(node);
+      }
+    });
+  };
+
+  processNodes(content);
+  
+  // Remove trailing empty lines
+  while (lines.length && lines[lines.length - 1] === '') {
+    lines.pop();
+  }
+  
+  return lines.join('\n');
+};
+
 const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEditorProps) => {
   const editor = useEditor({
     extensions: [
@@ -55,35 +111,33 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
         class: 'prose prose-sm max-w-none focus:outline-none min-h-[120px] p-3 whitespace-pre-wrap',
         style: 'white-space: pre-wrap;',
       },
-      clipboardTextSerializer: (content) => {
-        // Custom serializer untuk copy behavior - preserve line breaks dengan sempurna
-        const lines: string[] = [];
-        
-        content.content.forEach((node: any) => {
-          if (node.type.name === 'paragraph') {
-            let lineText = '';
-            node.content?.forEach((child: any) => {
-              if (child.isText) {
-                lineText += child.text;
-              } else if (child.type.name === 'hardBreak') {
-                lines.push(lineText);
-                lineText = '';
-              }
-            });
-            lines.push(lineText);
-          } else if (node.type.name === 'codeBlock') {
-            // Handle code block
-            let codeText = '';
-            node.content?.forEach((child: any) => {
-              if (child.isText) {
-                codeText += child.text;
-              }
-            });
-            lines.push(codeText);
+      handleDOMEvents: {
+        copy: (view, event) => {
+          try {
+            const slice = view.state.selection.content();
+            const text = serializeSliceToPlain(slice);
+            event.clipboardData?.setData('text/plain', text);
+            event.preventDefault();
+            return true;
+          } catch (e) {
+            return false;
           }
-        });
-        
-        return lines.join('\n');
+        },
+        cut: (view, event) => {
+          try {
+            const slice = view.state.selection.content();
+            const text = serializeSliceToPlain(slice);
+            event.clipboardData?.setData('text/plain', text);
+            event.preventDefault();
+            view.dispatch(view.state.tr.deleteSelection());
+            return true;
+          } catch (e) {
+            return false;
+          }
+        },
+      },
+      clipboardTextSerializer: (slice) => {
+        return serializeSliceToPlain(slice);
       },
       transformPastedHTML(html) {
         return html
@@ -107,9 +161,18 @@ const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEdi
   const copyAsPlainText = async () => {
     if (!editor) return;
     
-    const plainText = editor.getText();
-    
     try {
+      const { state } = editor;
+      const { from, to } = state.selection;
+      let plainText = '';
+      
+      if (from !== to) {
+        plainText = state.doc.textBetween(from, to, '\n');
+      } else {
+        const allSlice = { content: state.doc.content };
+        plainText = serializeSliceToPlain(allSlice);
+      }
+      
       await navigator.clipboard.writeText(plainText);
       console.log('Text copied to clipboard as plain text');
     } catch (err) {
